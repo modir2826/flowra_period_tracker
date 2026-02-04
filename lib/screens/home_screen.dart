@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'cycle_tracker_screen.dart';
+import 'contacts_screen.dart';
 import 'insights_screen.dart';
 import 'health_logging_screen.dart';
 import 'sos_screen.dart';
@@ -216,9 +217,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: 'Trusted Contacts',
                     color: Colors.indigo,
                     onTap: () {
-                      // TODO: Navigate to trusted contacts screen
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Coming soon!')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ContactsScreen()),
                       );
                     },
                   ),

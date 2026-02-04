@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import os
 import httpx
+from pathlib import Path
+from typing import List
 
 app = FastAPI(title="Flowra AI Insights")
 
@@ -86,3 +88,67 @@ async def ai_insights(req: AIRequest):
             raise HTTPException(status_code=502, detail="Unexpected AI response")
 
     return {"insights": text}
+
+
+# --- Trusted contacts sync endpoints (simple file-backed storage) ---
+
+DATA_DIR = Path(__file__).resolve().parent / 'data'
+DATA_DIR.mkdir(exist_ok=True)
+
+
+class Contact(BaseModel):
+    id: str | None = None
+    name: str
+    phone: str
+    relation: str | None = None
+    trusted: bool | None = False
+
+
+@app.get("/trusted/{uid}")
+async def get_trusted(uid: str) -> List[Contact]:
+    f = DATA_DIR / f"trusted_{uid}.json"
+    if not f.exists():
+        return []
+    import json
+    data = json.loads(f.read_text(encoding="utf-8"))
+    return [Contact(**c) for c in data]
+
+
+@app.post("/trusted/{uid}")
+async def set_trusted(uid: str, contacts: List[Contact]):
+    f = DATA_DIR / f"trusted_{uid}.json"
+    import json
+    f.write_text(json.dumps([c.dict() for c in contacts], ensure_ascii=False), encoding="utf-8")
+    return {"status": "ok", "count": len(contacts)}
+
+
+# --- SOS trigger endpoint (stub/sends via provider if configured) ---
+
+class SosRequest(BaseModel):
+    contacts: List[Contact]
+    message: str | None = None
+
+
+@app.post("/sos/{uid}")
+async def trigger_sos(uid: str, req: SosRequest):
+    # Try to use Twilio if configured, otherwise simulate
+    TW_SID = os.getenv("TWILIO_SID")
+    TW_TOKEN = os.getenv("TWILIO_TOKEN")
+    FROM_NUMBER = os.getenv("TWILIO_FROM")
+    sent = []
+    if TW_SID and TW_TOKEN and FROM_NUMBER:
+        # send SMS via Twilio REST API
+        async with httpx.AsyncClient() as client:
+            for c in req.contacts:
+                to = c.phone
+                body = req.message or f"Emergency alert from Flowra user {uid}"
+                payload = {"From": FROM_NUMBER, "To": to, "Body": body}
+                url = f"https://api.twilio.com/2010-04-01/Accounts/{TW_SID}/Messages.json"
+                resp = await client.post(url, data=payload, auth=(TW_SID, TW_TOKEN))
+                sent.append({"to": to, "status": resp.status_code})
+    else:
+        # Simulate sending
+        for c in req.contacts:
+            sent.append({"to": c.phone, "status": "simulated"})
+
+    return {"status": "ok", "sent": sent}
