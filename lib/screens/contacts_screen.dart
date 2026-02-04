@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import '../models/contact_model.dart';
 import '../services/contacts_service.dart';
+import 'sos_screen.dart';
 
 class ContactsScreen extends StatefulWidget {
   const ContactsScreen({super.key});
@@ -54,6 +55,7 @@ class _ContactsScreenState extends State<ContactsScreen> {
     );
   }
 
+  // ignore: unused_element
   Future<void> _importDeviceContacts() async {
     final messenger = ScaffoldMessenger.of(context);
     final permission = await fc.FlutterContacts.requestPermission();
@@ -101,23 +103,13 @@ class _ContactsScreenState extends State<ContactsScreen> {
           )
         ],
       ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton(
-            heroTag: 'import',
-            onPressed: _importDeviceContacts,
-            tooltip: 'Import device contacts',
-            child: const Icon(Icons.download),
-          ),
-          const SizedBox(height: 8),
-          FloatingActionButton(
-            heroTag: 'add',
-            onPressed: () => _showAddDialog(),
-            tooltip: 'Add contact',
-            child: const Icon(Icons.add),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const SosScreen()));
+        },
+        backgroundColor: Colors.red.shade600,
+        icon: const Icon(Icons.emergency, color: Colors.white),
+        label: const Text('Emergency SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
       body: StreamBuilder<List<ContactModel>>(
         stream: _service.streamContacts(),

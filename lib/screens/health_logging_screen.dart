@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/card_container.dart';
 import '../widgets/primary_button.dart';
+import 'sos_screen.dart';
 
 class HealthLoggingScreen extends StatefulWidget {
   const HealthLoggingScreen({super.key});
@@ -250,6 +251,14 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> {
             ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const SosScreen()));
+        },
+        backgroundColor: Colors.red.shade600,
+        icon: const Icon(Icons.emergency, color: Colors.white),
+        label: const Text('SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
     );
   }

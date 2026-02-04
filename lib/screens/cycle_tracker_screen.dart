@@ -3,6 +3,7 @@ import '../models/cycle_model.dart';
 import '../services/cycle_service.dart';
 import '../widgets/card_container.dart';
 import '../widgets/primary_button.dart';
+import 'sos_screen.dart';
 
 class CycleTrackerScreen extends StatefulWidget {
   const CycleTrackerScreen({super.key});
@@ -176,6 +177,14 @@ class _CycleTrackerScreenState extends State<CycleTrackerScreen> {
             const SizedBox(height: 24),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const SosScreen()));
+        },
+        backgroundColor: Colors.red.shade600,
+        icon: const Icon(Icons.emergency, color: Colors.white),
+        label: const Text('SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
     );
   }

@@ -5,6 +5,7 @@ import '../services/analytics_service.dart';
 import '../services/cycle_service.dart';
 import '../services/ai_service.dart';
 import '../models/health_log_model.dart';
+import 'sos_screen.dart';
 
 class InsightsScreen extends StatefulWidget {
   const InsightsScreen({super.key});
@@ -146,6 +147,14 @@ class _InsightsScreenState extends State<InsightsScreen> {
                 ],
               ),
             ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const SosScreen()));
+        },
+        backgroundColor: Colors.red.shade600,
+        icon: const Icon(Icons.emergency, color: Colors.white),
+        label: const Text('SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
     );
   }
 
