@@ -30,6 +30,8 @@ class _InsightsScreenState extends State<InsightsScreen> {
   @override
   void initState() {
     super.initState();
+    // Initialize summary with default values to avoid LateInitializationError
+    _summary = HealthSummary(avgMood: 0.0, avgEnergy: 0.0, avgPain: 0.0, totalLogs: 0);
     _loadData();
   }
 

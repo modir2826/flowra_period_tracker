@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+
+import '../services/notification_service.dart';
+import '../services/contacts_service.dart';
+// contact_model import not needed here
 
 class SosScreen extends StatefulWidget {
   const SosScreen({super.key});
@@ -9,39 +14,135 @@ class SosScreen extends StatefulWidget {
 
 class _SosScreenState extends State<SosScreen> {
   bool _sosActivated = false;
+  LocationPermission? _locationPermission;
 
-  void _triggerSOS() {
+  @override
+  void initState() {
+    super.initState();
+    _refreshPermissionStatus();
+  }
+
+  Future<void> _refreshPermissionStatus() async {
+    try {
+      final p = await Geolocator.checkPermission();
+      setState(() => _locationPermission = p);
+    } catch (_) {
+      setState(() => _locationPermission = null);
+    }
+  }
+
+  Future<void> _requestLocationPermission() async {
+    try {
+      final p = await Geolocator.requestPermission();
+      setState(() => _locationPermission = p);
+    } catch (_) {
+      setState(() => _locationPermission = null);
+    }
+  }
+
+  Future<void> _openSettings() async {
+    await Geolocator.openAppSettings();
+    await Geolocator.openLocationSettings();
+    _refreshPermissionStatus();
+  }
+
+  Future<void> _triggerSOS() async {
     setState(() => _sosActivated = true);
-    
-    // Show dialog
+
+    // Show loading
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('SOS Activated'),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 50),
-            SizedBox(height: 16),
-            Text('Emergency alert sent to your trusted contacts'),
-            SizedBox(height: 8),
-            Text('Your location has been shared'),
-            SizedBox(height: 16),
-            Text('Help is on the way. Stay safe.'),
+          children: const [
+            CircularProgressIndicator(),
+            SizedBox(height: 12),
+            Text('Sending emergency alert...'),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('Close'),
-          ),
-        ],
       ),
     );
+
+    try {
+      // Fetch trusted contacts from Firebase
+      final contacts = await ContactsService().fetchContactsOnce();
+      final trusted = contacts.where((c) => c.trusted).toList();
+
+      // Attempt to get location (best-effort)
+      Position? pos;
+      try {
+        final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (serviceEnabled) {
+          var permission = await Geolocator.checkPermission();
+          if (permission == LocationPermission.denied) {
+            permission = await Geolocator.requestPermission();
+          }
+          if (permission != LocationPermission.denied && permission != LocationPermission.deniedForever) {
+            pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+          }
+        }
+      } catch (_) {
+        pos = null;
+      }
+
+      // Send SOS to backend
+      await NotificationService().triggerSos(
+        trusted,
+        message: 'Emergency! I need help.',
+        latitude: pos?.latitude,
+        longitude: pos?.longitude,
+      );
+      if (!mounted) return;
+      Navigator.pop(context); // remove loading
+
+      if (!mounted) return;
+      // Show success
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('SOS Activated'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.check_circle, color: Colors.green, size: 50),
+              const SizedBox(height: 16),
+              const Text('Emergency alert sent to your trusted contacts'),
+              const SizedBox(height: 8),
+              Text(pos != null ? 'Location shared: ${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)}' : 'Location unavailable'),
+              const SizedBox(height: 16),
+              const Text('Help is on the way. Stay safe.'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (!mounted) return;
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (mounted) Navigator.pop(context); // remove loading
+      if (mounted) setState(() => _sosActivated = false);
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('SOS Failed'),
+          content: Text('Failed to send SOS: $e'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+          ],
+        ),
+      );
+    }
   }
 
   @override
@@ -231,6 +332,63 @@ class _SosScreenState extends State<SosScreen> {
               ),
 
               const SizedBox(height: 24),
+
+              // Location permission card
+              if (!_sosActivated)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    border: Border.all(color: Colors.orange.shade200),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.location_on, color: Colors.orange.shade700),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Location Permission',
+                            style: TextStyle(
+                              color: Colors.orange.shade900,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _locationPermission == null
+                            ? 'Unable to determine permission status.'
+                            : (_locationPermission == LocationPermission.always || _locationPermission == LocationPermission.whileInUse)
+                                ? 'Enabled — app can access your location when sending SOS.'
+                                : (_locationPermission == LocationPermission.denied)
+                                    ? 'Permission denied. Tap Request to allow access.'
+                                    : 'Permission denied permanently. Open settings to grant access.',
+                        style: TextStyle(color: Colors.orange.shade800, fontSize: 13),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          ElevatedButton(
+                            onPressed: _requestLocationPermission,
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange.shade600),
+                            child: const Text('Request Permission'),
+                          ),
+                          const SizedBox(width: 8),
+                          OutlinedButton(
+                            onPressed: _openSettings,
+                            child: const Text('Open Settings'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 12),
 
               // Manage Contacts
               if (!_sosActivated)

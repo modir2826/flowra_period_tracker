@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../widgets/card_container.dart';
+import '../widgets/primary_button.dart';
 
 class HealthLoggingScreen extends StatefulWidget {
   const HealthLoggingScreen({super.key});
@@ -45,19 +47,11 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.pink.shade600),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          'Log Your Health',
-          style: TextStyle(
-            color: Colors.pink.shade700,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('Log Your Health'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -72,13 +66,8 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> {
                   ),
             ),
             const SizedBox(height: 12),
-            Container(
+            CardContainer(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
               child: Column(
                 children: [
                   Row(
@@ -134,13 +123,8 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> {
                   ),
             ),
             const SizedBox(height: 12),
-            Container(
+            CardContainer(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
               child: Column(
                 children: [
                   Slider(
@@ -174,13 +158,8 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> {
                   ),
             ),
             const SizedBox(height: 12),
-            Container(
+            CardContainer(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -265,25 +244,9 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> {
             const SizedBox(height: 24),
 
             // Save Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _savelog,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.pink.shade600,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Save Log',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+            PrimaryButton(
+              label: 'Save Log',
+              onPressed: _savelog,
             ),
           ],
         ),

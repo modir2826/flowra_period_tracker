@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../widgets/primary_button.dart';
+import '../widgets/card_container.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -102,19 +104,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.pink.shade600),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          'Create Account',
-          style: TextStyle(
-            color: Colors.pink.shade700,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: const Text('Create Account'),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -142,14 +136,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               // Error Message
               if (_errorMessage != null)
-                Container(
-                  width: double.infinity,
+                CardContainer(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    border: Border.all(color: Colors.red.shade300),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
                   child: Row(
                     children: [
                       Icon(Icons.error_outline, color: Colors.red.shade700),
@@ -157,15 +145,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       Expanded(
                         child: Text(
                           _errorMessage!,
-                          style: TextStyle(
-                            color: Colors.red.shade700,
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(color: Colors.red.shade700, fontSize: 14),
                         ),
                       ),
                     ],
                   ),
-                ),
+                )
+              else
+                const SizedBox.shrink(),
               if (_errorMessage != null) const SizedBox(height: 16),
 
               // Full Name
@@ -364,38 +351,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 24),
 
               // Register Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleRegister,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.pink.shade600,
-                    disabledBackgroundColor: Colors.grey.shade300,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isLoading
-                      ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.pink.shade100,
-                            ),
-                          ),
-                        )
-                      : Text(
-                          'Create Account',
-                          style:
-                              Theme.of(context).textTheme.labelLarge?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                        ),
-                ),
+              PrimaryButton(
+                label: 'Create Account',
+                busy: _isLoading,
+                onPressed: _isLoading ? null : _handleRegister,
               ),
               const SizedBox(height: 16),
 

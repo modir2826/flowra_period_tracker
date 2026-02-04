@@ -127,6 +127,8 @@ async def set_trusted(uid: str, contacts: List[Contact]):
 class SosRequest(BaseModel):
     contacts: List[Contact]
     message: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 @app.post("/sos/{uid}")
@@ -142,6 +144,8 @@ async def trigger_sos(uid: str, req: SosRequest):
             for c in req.contacts:
                 to = c.phone
                 body = req.message or f"Emergency alert from Flowra user {uid}"
+                if req.latitude is not None and req.longitude is not None:
+                    body += f"\nLocation: https://www.google.com/maps/search/?api=1&query={req.latitude},{req.longitude}"
                 payload = {"From": FROM_NUMBER, "To": to, "Body": body}
                 url = f"https://api.twilio.com/2010-04-01/Accounts/{TW_SID}/Messages.json"
                 resp = await client.post(url, data=payload, auth=(TW_SID, TW_TOKEN))
@@ -149,6 +153,9 @@ async def trigger_sos(uid: str, req: SosRequest):
     else:
         # Simulate sending
         for c in req.contacts:
-            sent.append({"to": c.phone, "status": "simulated"})
+            msg = req.message or f"Emergency alert from Flowra user {uid}"
+            if req.latitude is not None and req.longitude is not None:
+                msg += f"\nLocation: https://www.google.com/maps/search/?api=1&query={req.latitude},{req.longitude}"
+            sent.append({"to": c.phone, "status": "simulated", "message": msg})
 
     return {"status": "ok", "sent": sent}

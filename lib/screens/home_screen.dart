@@ -6,6 +6,7 @@ import 'insights_screen.dart';
 import 'health_logging_screen.dart';
 import 'sos_screen.dart';
 import 'login_screen.dart';
+import '../widgets/card_container.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -102,65 +103,44 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 12),
 
               // Emergency SOS - Large
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.red.shade600, Colors.red.shade800],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.red.withAlpha(77),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SosScreen()),
-                    );
-                  },
-                  child: Column(
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SosScreen()),
+                  );
+                },
+                child: CardContainer(
+                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                  child: Row(
                     children: [
                       Container(
-                        width: 60,
-                        height: 60,
+                        width: 64,
+                        height: 64,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withAlpha(51),
+                          gradient: LinearGradient(colors: [Colors.red.shade600, Colors.red.shade800]),
                         ),
-                        child: const Icon(
-                          Icons.emergency,
-                          size: 32,
-                          color: Colors.white,
+                        child: const Icon(Icons.emergency, size: 34, color: Colors.white),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text('Emergency SOS', style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold)),
+                            SizedBox(height: 4),
+                            Text('Tap to notify trusted contacts quickly', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Emergency SOS',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Tap for quick help',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
-                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const SosScreen()));
+                        },
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade600),
+                        child: const Text('Activate'),
+                      )
                     ],
                   ),
                 ),

@@ -11,11 +11,16 @@ class NotificationService {
 
   String? get _uid => _auth.currentUser?.uid;
 
-  Future<Map<String, dynamic>> triggerSos(List<ContactModel> contacts, {String? message}) async {
+  Future<Map<String, dynamic>> triggerSos(List<ContactModel> contacts, {String? message, double? latitude, double? longitude}) async {
     final uid = _uid;
     if (uid == null) throw Exception('Not authenticated');
     final url = Uri.parse('$baseUrl/sos/$uid');
-    final body = {'contacts': contacts.map((c) => c.toJson()).toList(), 'message': message};
+    final body = <String, dynamic>{
+      'contacts': contacts.map((c) => c.toJson()).toList(),
+      'message': message,
+    };
+    if (latitude != null) body['latitude'] = latitude;
+    if (longitude != null) body['longitude'] = longitude;
     final resp = await http.post(url, headers: {'Content-Type': 'application/json'}, body: jsonEncode(body));
     if (resp.statusCode != 200) throw Exception('SOS server error: ${resp.body}');
     return jsonDecode(resp.body) as Map<String, dynamic>;
