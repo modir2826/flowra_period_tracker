@@ -18,6 +18,44 @@ class _CycleTrackerScreenState extends State<CycleTrackerScreen> {
   DateTime? _pickedDate;
   int _periodLength = 5;
 
+  Future<void> _confirmSave() async {
+    if (_pickedDate == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm Save'),
+        content: Text('Save period starting ${_pickedDate!.toLocal().toString().split(' ')[0]} with $_periodLength day(s)?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Confirm')),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+        await _savePeriod(_pickedDate!); // Extracted save logic
+    }
+  }
+
+  Future<void> _savePeriod(DateTime last) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final existing = await _cycleService.fetchCyclesOnce();
+      int cycleLen = 28;
+      if (existing.isNotEmpty) {
+        cycleLen = last.difference(existing.first.lastPeriodDate).inDays;
+        if (cycleLen <= 0) cycleLen = 28; // fallback for bad dates
+      }
+      final model = CycleModel(lastPeriodDate: last, cycleLength: cycleLen, periodLength: _periodLength);
+      await _cycleService.addCycle(model);
+      if (!mounted) return;
+      setState(() => _pickedDate = null);
+      messenger.showSnackBar(const SnackBar(content: Text('Period saved!'), backgroundColor: Colors.green));
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text('Failed to save period: ${e.toString()}'), backgroundColor: Colors.red.shade700));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -158,21 +196,7 @@ class _CycleTrackerScreenState extends State<CycleTrackerScreen> {
             const SizedBox(height: 16),
             PrimaryButton(
               label: 'Save Period Start',
-              onPressed: _pickedDate == null ? null : () async {
-                final last = _pickedDate!;
-                final existing = await _cycleService.fetchCyclesOnce();
-                int cycleLen = 28;
-                if (existing.isNotEmpty) {
-                  cycleLen = last.difference(existing.first.lastPeriodDate).inDays;
-                }
-                final model = CycleModel(lastPeriodDate: last, cycleLength: cycleLen, periodLength: _periodLength);
-                await _cycleService.addCycle(model);
-                setState(() => _pickedDate = null);
-                if (mounted) {
-                  // ignore: use_build_context_synchronously
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Period saved!'), backgroundColor: Colors.green));
-                }
-              },
+              onPressed: _pickedDate == null ? null : _confirmSave,
             ),
             const SizedBox(height: 24),
           ],

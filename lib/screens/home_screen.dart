@@ -5,6 +5,7 @@ import 'cycle_tracker_screen.dart';
 import 'contacts_screen.dart';
 import 'insights_screen.dart';
 import 'health_logging_screen.dart';
+import 'wellness_screen.dart';
 import 'sos_screen.dart';
 import 'login_screen.dart';
 import '../widgets/card_container.dart';
@@ -145,8 +146,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         label: 'Wellness',
                         isSelected: _selectedIndex == 5,
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Coming soon!')),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const WellnessScreen()),
                           );
                         },
                       ),

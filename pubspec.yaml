@@ -56,6 +56,7 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.10.0
+  mocktail: ^0.3.0
 
 # Launcher icon helper (run manually to generate native launcher icons)
 flutter_icons:

@@ -3,8 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/cycle_model.dart';
 
 class CycleService {
-  final FirebaseDatabase _db = FirebaseDatabase.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseDatabase _db;
+  final FirebaseAuth _auth;
+
+  CycleService({FirebaseDatabase? db, FirebaseAuth? auth})
+      : _db = db ?? FirebaseDatabase.instance,
+        _auth = auth ?? FirebaseAuth.instance;
 
   String? get _uid => _auth.currentUser?.uid;
 
