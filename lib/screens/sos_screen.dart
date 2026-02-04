@@ -46,6 +46,8 @@ class _SosScreenState extends State<SosScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Using WillPopScope here; PopScope replacement causes API mismatch
+    // ignore: deprecated_member_use
     return WillPopScope(
       onWillPop: () async => !_sosActivated,
       child: Scaffold(
@@ -154,7 +156,7 @@ class _SosScreenState extends State<SosScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.red.withOpacity(0.5),
+                          color: Colors.red.withAlpha(128),
                           blurRadius: 20,
                           spreadRadius: 5,
                           offset: const Offset(0, 10),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'cycle_tracker_screen.dart';
+import 'insights_screen.dart';
 import 'health_logging_screen.dart';
 import 'sos_screen.dart';
 import 'login_screen.dart';
@@ -39,12 +40,12 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: Icon(Icons.logout, color: Colors.pink.shade600),
             onPressed: () async {
+              final navigator = Navigator.of(context);
               await _authService.logout();
-              if (mounted) {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              }
+              if (!mounted) return;
+              navigator.pushReplacement(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              );
             },
           ),
         ],
@@ -112,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.red.withOpacity(0.3),
+                      color: Colors.red.withAlpha(77),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -132,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: 60,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withAlpha(51),
                         ),
                         child: const Icon(
                           Icons.emergency,
@@ -204,9 +205,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: 'Insights',
                     color: Colors.teal,
                     onTap: () {
-                      // TODO: Navigate to insights screen
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Coming soon!')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const InsightsScreen()),
                       );
                     },
                   ),
@@ -350,7 +351,7 @@ class _FeatureCard extends StatelessWidget {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withAlpha(26),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 28),

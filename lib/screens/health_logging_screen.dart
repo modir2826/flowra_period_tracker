@@ -12,7 +12,7 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> {
   int _selectedEnergy = 5; // 1-10 scale
   int _selectedPainIntensity = 0; // 1-10 scale
   String _selectedPainLocation = '';
-  TextEditingController _notesController = TextEditingController();
+  late final TextEditingController _notesController = TextEditingController();
 
   final List<String> _moodEmojis = ['😢', '😕', '😐', '🙂', '😄'];
   final List<String> _painLocations = [
