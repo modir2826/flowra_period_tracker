@@ -6,7 +6,9 @@ import 'contacts_screen.dart';
 import 'insights_screen.dart';
 import 'health_logging_screen.dart';
 import 'wellness_screen.dart';
+import 'chatbot_screen.dart';
 import 'sos_screen.dart';
+import 'settings_screen.dart';
 import 'login_screen.dart';
 import '../widgets/card_container.dart';
 
@@ -40,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: Icon(Icons.settings, color: Colors.pink.shade600),
             onPressed: () {
-              // TODO: Navigate to settings
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
             },
           ),
           IconButton(
@@ -149,6 +151,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const WellnessScreen()),
+                          );
+                        },
+                      ),
+                      _SidebarItem(
+                        icon: Icons.chat,
+                        label: 'AI Assistant',
+                        isSelected: _selectedIndex == 6,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ChatbotScreen()),
                           );
                         },
                       ),
