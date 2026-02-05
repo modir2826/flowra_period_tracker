@@ -7,7 +7,7 @@ class NotificationService {
   final String baseUrl;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  NotificationService({this.baseUrl = 'http://localhost:8000'});
+  NotificationService({this.baseUrl = 'http://127.0.0.1:8001'});
 
   String? get _uid => _auth.currentUser?.uid;
 

@@ -8,7 +8,7 @@ class DefaultFirebaseOptions {
         apiKey: "AIzaSyBdLSuPzne_K6QSL_NV4axlCxc3vws586E",
         authDomain: "flowra-9584d.firebaseapp.com",
         projectId: "flowra-9584d",
-        storageBucket: "flowra-9584d.firebasestorage.app",
+        storageBucket: "flowra-9584d.appspot.com",
         messagingSenderId: "66418808535",
         appId: "1:66418808535:web:c3c7bb510f2a66f0478292",
         databaseURL:

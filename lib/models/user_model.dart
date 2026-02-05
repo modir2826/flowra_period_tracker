@@ -32,6 +32,7 @@ class UserModel {
 
   // Convert from JSON
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final rawSettings = json['settings'];
     return UserModel(
       uid: json['uid'] as String,
       email: json['email'] as String,
@@ -39,7 +40,9 @@ class UserModel {
       photoURL: json['photoURL'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       lastUpdated: DateTime.parse(json['lastUpdated'] as String),
-      settings: json['settings'] as Map<String, dynamic>? ?? {},
+      settings: rawSettings is Map
+          ? Map<String, dynamic>.from(rawSettings)
+          : <String, dynamic>{},
     );
   }
 

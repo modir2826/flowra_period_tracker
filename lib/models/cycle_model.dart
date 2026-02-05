@@ -6,7 +6,7 @@ class CycleModel {
   final int periodLength; // duration of period in days
   final String flowIntensity; // Spotting/Light/Medium/Heavy
   final bool missed; // missed/skipped period flag
-  final String? notes;
+  final String notes;
   final DateTime createdAt;
 
   CycleModel({
@@ -17,7 +17,7 @@ class CycleModel {
     required this.periodLength,
     this.flowIntensity = 'Medium',
     this.missed = false,
-    this.notes,
+    this.notes = '',
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -31,7 +31,7 @@ class CycleModel {
         'periodLength': periodLength,
         'flowIntensity': flowIntensity,
         'missed': missed,
-        'notes': notes,
+        'notes': notes ?? '',
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -43,7 +43,7 @@ class CycleModel {
       periodLength: (json['periodLength'] as num?)?.toInt() ?? 0,
       flowIntensity: (json['flowIntensity'] ?? 'Medium') as String,
       missed: (json['missed'] ?? false) as bool,
-      notes: json['notes'] as String?,
+      notes: (json['notes'] ?? '') as String,
       createdAt: json['createdAt'] != null
       ? DateTime.parse(json['createdAt'] as String)
       : DateTime.now(),
