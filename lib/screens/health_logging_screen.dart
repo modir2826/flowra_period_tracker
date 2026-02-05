@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../models/health_log_model.dart';
+import '../services/health_log_service.dart';
 
 class HealthLoggingScreen extends StatefulWidget {
   const HealthLoggingScreen({super.key});
@@ -21,7 +23,8 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> {
     'Upper back',
     'Legs',
     'Breasts',
-    'Headache'
+    'Headache',
+    'Muscles'
   ];
 
   @override
@@ -30,15 +33,54 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> {
     super.dispose();
   }
 
-  void _savelog() {
+  // void _savelog() {
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     const SnackBar(
+  //       content: Text('Health log saved successfully!'),
+  //       backgroundColor: Colors.green,
+  //     ),
+  //   );
+  //   Navigator.pop(context);
+  // }
+
+  Future<void> _savelog() async {
+  try {
+    // 1️⃣ Model banao (UI → Data)
+    final log = HealthLogModel(
+      timestamp: DateTime.now(),
+      mood: _selectedMood,
+      energy: _selectedEnergy,
+      painIntensity: _selectedPainIntensity,
+      painLocation: _selectedPainLocation,
+      notes: _notesController.text.trim(),
+    );
+
+    // 2️⃣ Service ke through SAVE karo
+    final service = HealthLogService();
+    await service.addLog(log);
+
+    if (!mounted) return;
+
+    // 3️⃣ Success message
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Health log saved successfully!'),
         backgroundColor: Colors.green,
       ),
     );
+
+    // 4️⃣ Back to Home
     Navigator.pop(context);
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error saving log: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

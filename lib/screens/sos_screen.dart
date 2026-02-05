@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:telephony/telephony.dart';
+import '../services/contacts_service.dart';
+
+
 
 class SosScreen extends StatefulWidget {
   const SosScreen({super.key});
@@ -8,10 +12,37 @@ class SosScreen extends StatefulWidget {
 }
 
 class _SosScreenState extends State<SosScreen> {
-  bool _sosActivated = false;
+  //final Telephony telephony = Telephony.instance;
+  final Telephony telephony = Telephony.instance;
+final ContactsService _contactsService = ContactsService();
 
-  void _triggerSOS() {
+
+  bool _sosActivated = false;
+  Future<void> _sendSOSMessages(List<String> numbers) async {
+  bool? permission = await telephony.requestPhoneAndSmsPermissions;
+
+  if (permission ?? false) {
+    for (String number in numbers) {
+      await telephony.sendSms(
+        to: number,
+        message:
+            "Emergency Alert! I need help. Please contact me immediately.",
+      );
+    }
+  }
+}
+
+
+  void _triggerSOS() async {
     setState(() => _sosActivated = true);
+    // Firebase contacts lao
+  final contacts = await _contactsService.fetchContactsOnce();
+
+  // sirf trusted numbers lo
+  final trustedNumbers =
+      contacts.where((c) => c.trusted).map((c) => c.phone).toList();
+
+  await _sendSOSMessages(trustedNumbers);
     
     // Show dialog
     showDialog(

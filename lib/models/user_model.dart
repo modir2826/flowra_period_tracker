@@ -39,7 +39,11 @@ class UserModel {
       photoURL: json['photoURL'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       lastUpdated: DateTime.parse(json['lastUpdated'] as String),
-      settings: json['settings'] as Map<String, dynamic>? ?? {},
+     // settings: json['settings'] as Map<String, dynamic>? ?? {},
+     settings: json['settings'] != null
+    ? Map<String, dynamic>.from(json['settings'])
+    : {},
+
     );
   }
 

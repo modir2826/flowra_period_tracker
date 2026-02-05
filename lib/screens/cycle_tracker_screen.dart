@@ -10,7 +10,11 @@ class CycleTrackerScreen extends StatefulWidget {
 }
 
 class _CycleTrackerScreenState extends State<CycleTrackerScreen> {
+  
+String _selectedHistoryTab = "All";
+
   final CycleService _cycleService = CycleService();
+  
 
   DateTime? _pickedDate;
   int _periodLength = 5;
@@ -30,12 +34,37 @@ class _CycleTrackerScreenState extends State<CycleTrackerScreen> {
             // Stream of cycles
             Expanded(
               child: StreamBuilder<List<CycleModel>>(
+                
                 stream: _cycleService.streamCycles(),
                 builder: (context, snap) {
                   if (snap.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
                   final cycles = snap.data ?? [];
+                  
+
+//history
+                  DateTime today = DateTime.now();
+
+                  DateTime? lastPeriod;
+                  int cycleLength = 28;
+                  int periodLength = 5;
+
+                  if (cycles.isNotEmpty) {
+                    lastPeriod = cycles.first.lastPeriodDate;
+                    cycleLength = cycles.first.cycleLength;
+                    periodLength = cycles.first.periodLength;
+                  }
+
+                DateTime? ovulationDate =
+                  lastPeriod?.add(Duration(days: cycleLength ~/ 2));
+
+                DateTime? fertileStart =
+                  ovulationDate?.subtract(const Duration(days: 3));
+
+                DateTime? fertileEnd =
+                ovulationDate?.add(const Duration(days: 1));
+
 
                   final avg = _cycleService.averageCycleLength(cycles).toStringAsFixed(1);
                   final predicted = _cycleService.predictNextCycleStart(cycles);
@@ -47,6 +76,11 @@ class _CycleTrackerScreenState extends State<CycleTrackerScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text('Average cycle length: $avg days'),
+
+                          //add something
+                          
+
+
                           if (predicted != null)
                             Text('Next: ${predicted.toLocal().toString().split(' ')[0]}'),
                         ],
@@ -74,6 +108,100 @@ class _CycleTrackerScreenState extends State<CycleTrackerScreen> {
                                 },
                               ),
                       ),
+                     
+                      
+const SizedBox(height: 16),
+
+// HISTORY CARD
+Container(
+  padding: const EdgeInsets.all(16),
+  decoration: BoxDecoration(
+    color: Colors.grey.shade100,
+    borderRadius: BorderRadius.circular(16),
+  ),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+
+      const Text("History",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+
+      const SizedBox(height: 12),
+
+      // TABS
+      Row(
+        children: ["All", "Period", "Ovulation", "Fertile"].map((tab) {
+          final selected = _selectedHistoryTab == tab;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedHistoryTab = tab),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: selected ? Colors.pink : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  tab,
+                  style: TextStyle(
+                    color: selected ? Colors.white : Colors.black,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+
+      const SizedBox(height: 16),
+
+      // ANIMATED BAR
+      AnimatedContainer(
+        duration: const Duration(milliseconds: 400),
+        height: 18,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              flex: periodLength,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: (_selectedHistoryTab == "Period" ||
+                          _selectedHistoryTab == "All")
+                      ? Colors.pink.shade400
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 5,
+              child: Container(
+                color: (_selectedHistoryTab == "Fertile" ||
+                        _selectedHistoryTab == "All")
+                    ? Colors.yellow.shade600
+                    : Colors.transparent,
+              ),
+            ),
+            Expanded(
+              flex: cycleLength - periodLength - 5,
+              child: Container(),
+            ),
+          ],
+        ),
+      ),
+    ],
+  ),
+),
+
+
+
                     ],
                   );
                 },
@@ -152,3 +280,49 @@ class _CycleTrackerScreenState extends State<CycleTrackerScreen> {
     );
   }
 }
+Widget buildHistoryBar(
+  DateTime lastPeriod,
+  int cycleLength,
+  int periodLength,
+) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text("History",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 12),
+
+      Container(
+        height: 18,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade300,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              flex: periodLength,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.pink.shade400,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 5,
+              child: Container(color: Colors.yellow.shade600),
+            ),
+            Expanded(
+              flex: cycleLength - periodLength - 5,
+              child: Container(),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
+
+

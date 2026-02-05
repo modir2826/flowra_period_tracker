@@ -14,6 +14,7 @@ class ContactsService {
   String? get _uid => _auth.currentUser?.uid;
 
   DatabaseReference _userContactsRef(String uid) => _db.ref('contacts/$uid');
+  
 
   Future<void> addContact(ContactModel c) async {
     final uid = _uid;
