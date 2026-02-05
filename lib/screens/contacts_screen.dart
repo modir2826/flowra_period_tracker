@@ -36,17 +36,25 @@ class _ContactsScreenState extends State<ContactsScreen> {
           ElevatedButton(
             onPressed: () async {
               final navigator = Navigator.of(ctx);
+              final messenger = ScaffoldMessenger.of(ctx);
               final name = nameCtl.text.trim();
               final phone = phoneCtl.text.trim();
               final rel = relationCtl.text.trim();
-              if (name.isEmpty || phone.isEmpty) return;
-              final model = ContactModel(id: existing?.id, name: name, phone: phone, relation: rel);
-              if (existing == null) {
-                await _service.addContact(model);
-              } else {
-                await _service.updateContact(model);
+              if (name.isEmpty || phone.isEmpty) {
+                messenger.showSnackBar(const SnackBar(content: Text('Name and phone required')));
+                return;
               }
-              navigator.pop();
+              try {
+                final model = ContactModel(id: existing?.id, name: name, phone: phone, relation: rel, trusted: existing?.trusted ?? false, createdAt: existing?.createdAt);
+                if (existing == null) {
+                  await _service.addContact(model);
+                } else {
+                  await _service.updateContact(model);
+                }
+                navigator.pop();
+              } catch (e) {
+                messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
+              }
             },
             child: const Text('Save'),
           ),

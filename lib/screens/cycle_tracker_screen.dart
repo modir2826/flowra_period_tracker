@@ -36,16 +36,16 @@ class _CycleTrackerScreenState extends State<CycleTrackerScreen> {
     }
   }
 
-  Future<void> _savePeriod(DateTime last) async {
+  Future<void> _savePeriod(DateTime start) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
       final existing = await _cycleService.fetchCyclesOnce();
       int cycleLen = 28;
       if (existing.isNotEmpty) {
-        cycleLen = last.difference(existing.first.lastPeriodDate).inDays;
+        cycleLen = start.difference(existing.first.startDate).inDays;
         if (cycleLen <= 0) cycleLen = 28; // fallback for bad dates
       }
-      final model = CycleModel(lastPeriodDate: last, cycleLength: cycleLen, periodLength: _periodLength);
+      final model = CycleModel(startDate: start, cycleLength: cycleLen, periodLength: _periodLength);
       await _cycleService.addCycle(model);
       if (!mounted) return;
       setState(() => _pickedDate = null);
@@ -138,7 +138,7 @@ class _CycleTrackerScreenState extends State<CycleTrackerScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Start: ${c.lastPeriodDate.toLocal().toString().split(' ')[0]}', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                              Text('Start: ${c.startDate.toLocal().toString().split(' ')[0]}', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
                               Text('${c.cycleLength}d cycle · ${c.periodLength}d period', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
                             ],
                           ),

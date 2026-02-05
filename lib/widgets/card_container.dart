@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 class CardContainer extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
+  final EdgeInsetsGeometry? margin;
 
-  const CardContainer({super.key, required this.child, this.padding = const EdgeInsets.all(16)});
+  const CardContainer({super.key, required this.child, this.padding = const EdgeInsets.all(16), this.margin});
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      margin: margin,
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(

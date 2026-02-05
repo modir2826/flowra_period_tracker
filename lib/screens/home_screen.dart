@@ -253,7 +253,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         }
                         final cycles = snapshot.data!;
                         final lastCycle = cycles.first;
-                        final nextPeriod = lastCycle.lastPeriodDate.add(Duration(days: lastCycle.cycleLength));
+                        final nextPeriod = lastCycle.startDate.add(Duration(days: lastCycle.cycleLength));
                         final daysUntilPeriod = nextPeriod.difference(DateTime.now()).inDays;
                         
                         return CardContainer(
@@ -282,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          '${lastCycle.lastPeriodDate.month}/${lastCycle.lastPeriodDate.day}/${lastCycle.lastPeriodDate.year}',
+                                          '${lastCycle.startDate.month}/${lastCycle.startDate.day}/${lastCycle.startDate.year}',
                                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                                 fontWeight: FontWeight.bold,
                                                 color: Colors.pink.shade600,

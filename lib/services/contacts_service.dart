@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 // Backend base URL for sync
-const String _backendBase = 'http://localhost:8000';
+const String _backendBase = 'http://localhost:8001';
 
 class ContactsService {
   final FirebaseDatabase _db = FirebaseDatabase.instance;

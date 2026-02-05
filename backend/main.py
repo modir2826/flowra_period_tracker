@@ -19,7 +19,7 @@ class HealthLog(BaseModel):
 
 class Cycle(BaseModel):
     id: str | None = None
-    lastPeriodDate: str
+    startDate: str
     cycleLength: int
     periodLength: int
 

@@ -86,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Colors.pink.shade100,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(

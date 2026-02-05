@@ -52,8 +52,8 @@ class CycleService {
       m['id'] = key;
       list.add(CycleModel.fromJson(m));
     });
-    // sort by lastPeriodDate descending
-    list.sort((a, b) => b.lastPeriodDate.compareTo(a.lastPeriodDate));
+    // sort by startDate descending
+    list.sort((a, b) => b.startDate.compareTo(a.startDate));
     return list;
   }
 
@@ -71,7 +71,7 @@ class CycleService {
         m['id'] = e.key;
         return CycleModel.fromJson(m);
       }).toList();
-      list.sort((a, b) => b.lastPeriodDate.compareTo(a.lastPeriodDate));
+      list.sort((a, b) => b.startDate.compareTo(a.startDate));
       return list;
     });
   }
@@ -86,9 +86,9 @@ class CycleService {
   // Predict next cycle start date using last cycle and average cycle length
   DateTime? predictNextCycleStart(List<CycleModel> cycles) {
     if (cycles.isEmpty) return null;
-    final sorted = List<CycleModel>.from(cycles)..sort((a, b) => b.lastPeriodDate.compareTo(a.lastPeriodDate));
+    final sorted = List<CycleModel>.from(cycles)..sort((a, b) => b.startDate.compareTo(a.startDate));
     final last = sorted.first;
     final avg = averageCycleLength(cycles);
-    return last.lastPeriodDate.add(Duration(days: avg.round()));
+    return last.startDate.add(Duration(days: avg.round()));
   }
 }

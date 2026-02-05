@@ -31,13 +31,13 @@ void main() {
     when(() => mockPushRef.set(any())).thenAnswer((_) async => Future<void>.value());
 
     final service = CycleService(db: mockDb, auth: mockAuth);
-    final model = CycleModel(lastPeriodDate: DateTime.utc(2026, 1, 1), cycleLength: 28, periodLength: 5);
+    final model = CycleModel(startDate: DateTime.utc(2026, 1, 1), cycleLength: 28, periodLength: 5);
 
     await service.addCycle(model);
 
     final captured = verify(() => mockPushRef.set(captureAny())).captured.single as Map<String, dynamic>;
     expect(captured['id'], equals('push_key'));
-    expect(captured['lastPeriodDate'], equals(model.lastPeriodDate.toIso8601String()));
+    expect(captured['startDate'], equals(model.startDate.toIso8601String()));
     expect(captured['cycleLength'], equals(28));
     expect(captured['periodLength'], equals(5));
   });

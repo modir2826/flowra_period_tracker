@@ -20,7 +20,7 @@ class AnalyticsService {
   HealthSummary computeSummary(List<HealthLogModel> logs) {
     if (logs.isEmpty) return HealthSummary(avgMood: 3.0, avgEnergy: 5.0, avgPain: 0.0, totalLogs: 0);
     final total = logs.length;
-    final moodTotal = logs.map((l) => l.mood).reduce((a, b) => a + b);
+    final moodTotal = logs.map((l) => l.moodIntensity).reduce((a, b) => a + b);
     final energyTotal = logs.map((l) => l.energy).reduce((a, b) => a + b);
     final painTotal = logs.map((l) => l.painIntensity).reduce((a, b) => a + b);
     return HealthSummary(
@@ -39,7 +39,7 @@ class AnalyticsService {
 
     final windows = <Map<String, DateTime>>[];
     for (final c in cycles) {
-      final start = c.lastPeriodDate;
+      final start = c.startDate;
       final end = start.add(Duration(days: c.periodLength));
       windows.add({'start': start, 'end': end});
     }
@@ -89,7 +89,7 @@ class AnalyticsService {
       final d = DateTime(l.timestamp.year, l.timestamp.month, l.timestamp.day);
       final idx = d.difference(startDate).inDays;
       if (idx < 0 || idx >= days) continue;
-      moodSums[idx] += l.mood;
+      moodSums[idx] += l.moodIntensity;
       energySums[idx] += l.energy;
       painSums[idx] += l.painIntensity;
       counts[idx]++;
