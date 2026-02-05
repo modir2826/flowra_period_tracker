@@ -32,6 +32,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
+  List<Map<String, String>> _suggestions = [];
 
   final List<Map<String, String>> _faqs = [
     {'question': 'How accurate is period prediction?', 'icon': '📅'},
@@ -40,7 +41,62 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     {'question': 'What are the features of Flowra?', 'icon': '✨'},
     {'question': 'How do I use the SOS feature?', 'icon': '🆘'},
     {'question': 'How is my data protected?', 'icon': '🔒'},
+    {'question': 'How do I add previous cycles?', 'icon': '🗓️'},
+    {'question': 'What should I do if my cycle is irregular?', 'icon': '🧭'},
+    {'question': 'How do I track symptoms like cramps?', 'icon': '💢'},
+    {'question': 'How can I improve energy levels?', 'icon': '⚡'},
+    {'question': 'How do I manage PMS symptoms?', 'icon': '🌙'},
+    {'question': 'What is the fertile window?', 'icon': '🌱'},
+    {'question': 'How do I add trusted contacts?', 'icon': '👥'},
+    {'question': 'Can I export or delete my data?', 'icon': '📁'},
+    {'question': 'What should I log daily?', 'icon': '📝'},
+    {'question': 'How do I use the cycle tracker?', 'icon': '📈'},
+    {'question': 'What do the insights mean?', 'icon': '🔎'},
+    {'question': 'How do I reset my password?', 'icon': '🔑'},
   ];
+
+  void _updateSuggestions(String lastQuestion) {
+    final msg = lastQuestion.toLowerCase();
+    final List<String> candidates = [];
+    if (msg.contains('period') || msg.contains('cycle')) {
+      candidates.addAll([
+        'How accurate is period prediction?',
+        'What is a normal cycle length?',
+        'How do I track my health logs?',
+      ]);
+    } else if (msg.contains('health') || msg.contains('log')) {
+      candidates.addAll([
+        'How do I track my health logs?',
+        'How is my data protected?',
+        'What are the features of Flowra?',
+      ]);
+    } else if (msg.contains('sos') || msg.contains('emergency')) {
+      candidates.addAll([
+        'How do I use the SOS feature?',
+        'How is my data protected?',
+        'What are the features of Flowra?',
+      ]);
+    } else if (msg.contains('privacy') || msg.contains('data') || msg.contains('secure')) {
+      candidates.addAll([
+        'How is my data protected?',
+        'What are the features of Flowra?',
+        'How do I track my health logs?',
+      ]);
+    } else {
+      candidates.addAll(_faqs.map((f) => f['question']!).toList());
+    }
+
+    final unique = <String>{};
+    for (final q in candidates) {
+      if (q.toLowerCase() == msg) continue;
+      unique.add(q);
+    }
+
+    final picks = unique.take(3).toList();
+    setState(() {
+      _suggestions = _faqs.where((f) => picks.contains(f['question'])).toList();
+    });
+  }
 
   Future<void> _sendMessage(String message) async {
     if (message.isEmpty) return;
@@ -86,15 +142,18 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           timestamp: DateTime.now(),
         ));
       });
+      _updateSuggestions(message);
     } catch (e) {
       // Fallback to predefined responses if backend fails
+      final fallback = _getFallbackResponse(message);
       setState(() {
         _messages.add(ChatMessage(
-          text: _getFallbackResponse(message),
+          text: fallback,
           isUser: false,
           timestamp: DateTime.now(),
         ));
       });
+      _updateSuggestions(message);
     } finally {
       setState(() => _isLoading = false);
       _scrollToBottom();
@@ -233,6 +292,36 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                         label: Text(faq['question']!),
                         avatar: Text(faq['icon']!),
                         backgroundColor: Colors.pink.shade100,
+                        labelStyle: TextStyle(color: Colors.pink.shade700),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          if (_messages.length > 1 && _suggestions.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Suggested questions:',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _suggestions.map((faq) {
+                      return ActionChip(
+                        onPressed: () => _sendMessage(faq['question']!),
+                        label: Text(faq['question']!),
+                        avatar: Text(faq['icon']!),
+                        backgroundColor: Colors.pink.shade50,
                         labelStyle: TextStyle(color: Colors.pink.shade700),
                       );
                     }).toList(),

@@ -3,7 +3,6 @@ import 'package:fl_chart/fl_chart.dart';
 import '../services/health_log_service.dart';
 import '../services/analytics_service.dart';
 import '../services/cycle_service.dart';
-import '../services/ai_service.dart';
 import '../models/health_log_model.dart';
 import '../models/cycle_model.dart';
 import '../widgets/card_container.dart';
@@ -20,23 +19,19 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
   final HealthLogService _logService = HealthLogService();
   final CycleService _cycleService = CycleService();
   final AnalyticsService _analytics = AnalyticsService();
-  final AiService _ai = AiService();
-
   bool _loading = true;
   List<HealthLogModel> _logs = [];
   List<CycleModel> _cycles = [];
   Map<String, double> _painCorrelation = {};
   late HealthSummary _summary;
   Map<String, dynamic>? _daily;
-  String? _aiResult;
-  bool _aiLoading = false;
   late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _summary = HealthSummary(avgMood: 0.0, avgEnergy: 0.0, avgPain: 0.0, totalLogs: 0);
-    _tabController = TabController(length: 9, vsync: this);
+    _tabController = TabController(length: 8, vsync: this);
     _loadData();
   }
 
@@ -66,21 +61,6 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
       // ignore errors
     } finally {
       setState(() => _loading = false);
-    }
-  }
-
-  Future<void> _generateAiInsights() async {
-    setState(() {
-      _aiLoading = true;
-      _aiResult = null;
-    });
-    try {
-      final result = await _ai.generateInsights(_logs, _cycles);
-      setState(() => _aiResult = result);
-    } catch (e) {
-      setState(() => _aiResult = 'Error generating AI insights: $e');
-    } finally {
-      setState(() => _aiLoading = false);
     }
   }
 
@@ -130,31 +110,6 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
     };
   }
 
-  // Calculate symptom trends
-  Map<String, int> _calculateSymptomTrends() {
-    final trends = {
-      'cramps': 0,
-      'headache': 0,
-      'bloating': 0,
-      'mood_swings': 0,
-      'acne': 0,
-      'fatigue': 0,
-    };
-
-    // Count from pain locations and notes instead
-    for (var log in _logs) {
-      final combined = '${log.painLocation} ${log.notes}'.toLowerCase();
-      if (combined.contains('cramp')) trends['cramps'] = (trends['cramps'] ?? 0) + 1;
-      if (combined.contains('headache')) trends['headache'] = (trends['headache'] ?? 0) + 1;
-      if (combined.contains('bloat')) trends['bloating'] = (trends['bloating'] ?? 0) + 1;
-      if (combined.contains('mood')) trends['mood_swings'] = (trends['mood_swings'] ?? 0) + 1;
-      if (combined.contains('acne')) trends['acne'] = (trends['acne'] ?? 0) + 1;
-      if (combined.contains('fatigue') || combined.contains('tired')) trends['fatigue'] = (trends['fatigue'] ?? 0) + 1;
-    }
-
-    return trends;
-  }
-
   // Health score (0-100) based on tracking consistency
   int _calculateHealthScore() {
     int score = 50; // Base score
@@ -162,6 +117,30 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
     score += (_cycles.isNotEmpty ? 10 : 0);
     score += (_summary.avgMood > 5 ? 5 : 0);
     score += (_summary.avgEnergy > 5 ? 5 : 0);
+
+    // Trend contribution from last 14 days (if available)
+    if (_daily != null) {
+      final mood = List<double>.from(_daily!['mood'] as List);
+      final energy = List<double>.from(_daily!['energy'] as List);
+      final pain = List<double>.from(_daily!['pain'] as List);
+
+      double trend(List<double> v) {
+        if (v.length < 2) return 0;
+        return v.last - v.first;
+      }
+
+      final moodTrend = trend(mood);
+      final energyTrend = trend(energy);
+      final painTrend = trend(pain);
+
+      if (moodTrend > 0.5) score += 5;
+      if (energyTrend > 0.5) score += 5;
+      if (painTrend < -0.5) score += 5;
+
+      if (moodTrend < -0.5) score -= 5;
+      if (energyTrend < -0.5) score -= 5;
+      if (painTrend > 0.5) score -= 5;
+    }
     return score.clamp(0, 100);
   }
 
@@ -180,10 +159,11 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Health Insights'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.pink.shade700,
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
@@ -191,7 +171,6 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
           tabs: const [
             Tab(text: '📊 Dashboard'),
             Tab(text: '📈 Cycle Summary'),
-            Tab(text: '🩺 Symptoms'),
             Tab(text: '😊 Mood'),
             Tab(text: '💤 Sleep'),
             Tab(text: '🥗 Nutrition'),
@@ -201,22 +180,30 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
           ],
         ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildDashboardTab(),
-                _buildCycleSummaryTab(),
-                _buildSymptomsTrendTab(),
-                _buildMoodTab(),
-                _buildSleepTab(),
-                _buildNutritionTab(),
-                _buildExerciseTab(),
-                _buildMentalHealthTab(),
-                _buildScoreTab(),
-              ],
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.pink.shade50, Colors.white],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildDashboardTab(),
+                  _buildCycleSummaryTab(),
+                  _buildMoodTab(),
+                  _buildSleepTab(),
+                  _buildNutritionTab(),
+                  _buildExerciseTab(),
+                  _buildMentalHealthTab(),
+                  _buildScoreTab(),
+                ],
+              ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const SosScreen()));
@@ -274,42 +261,9 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
           const SizedBox(height: 12),
           _buildPainCorrelationWidget(),
           const SizedBox(height: 24),
-
-          // AI Insights
-          Text('AI-Powered Insights', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Text('Personal Insights', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _aiLoading ? null : _generateAiInsights,
-              icon: _aiLoading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.auto_awesome),
-              label: Text(_aiLoading ? 'Generating...' : 'Get AI Insights'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pink.shade600,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (_aiResult != null)
-            CardContainer(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.lightbulb_outline, color: Colors.amber.shade700),
-                      const SizedBox(width: 8),
-                      Text('AI Analysis', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(_aiResult!, style: Theme.of(context).textTheme.bodyMedium),
-                ],
-              ),
-            ),
+          _buildNonAiInsightsCard(),
         ],
       ),
     );
@@ -317,7 +271,6 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
 
   Widget _buildCycleSummaryTab() {
     final metrics = _calculateCycleMetrics();
-    final avgLength = int.tryParse(metrics['avgLength'] as String) ?? 28;
     final nextDate = metrics['nextDate'] as String;
     
     // Calculate fertile window (typically 5 days before ovulation + ovulation day)
@@ -364,37 +317,6 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
           _buildAccuracyMetric('Predicted vs Actual', 92),
           _buildAccuracyMetric('Ovulation Window', 85),
           _buildAccuracyMetric('Data Consistency', 78),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSymptomsTrendTab() {
-    final trends = _calculateSymptomTrends();
-    final symptoms = [
-      {'name': 'Cramps', 'emoji': '🤕', 'key': 'cramps'},
-      {'name': 'Headache', 'emoji': '🤕', 'key': 'headache'},
-      {'name': 'Bloating', 'emoji': '🤰', 'key': 'bloating'},
-      {'name': 'Mood Swings', 'emoji': '😭', 'key': 'mood_swings'},
-      {'name': 'Acne', 'emoji': '🌡️', 'key': 'acne'},
-      {'name': 'Fatigue', 'emoji': '😴', 'key': 'fatigue'},
-    ];
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Symptom Trends & Analysis', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text('Track & analyze your symptoms', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
-          const SizedBox(height: 16),
-
-          ...symptoms.map((s) {
-            final count = trends[s['key']] ?? 0;
-            final percentage = _logs.isEmpty ? 0 : (count / _logs.length * 100).toInt();
-            return _buildSymptomCard(s['emoji']!, s['name']!, count, percentage);
-          }).toList(),
         ],
       ),
     );
@@ -710,23 +632,40 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
                     children: [
                       CircularProgressIndicator(
                         value: healthScore / 100,
-                        strokeWidth: 8,
+                        strokeWidth: 10,
                         valueColor: AlwaysStoppedAnimation<Color>(
                           healthScore > 75 ? Colors.green : healthScore > 50 ? Colors.orange : Colors.red,
                         ),
                         backgroundColor: Colors.grey.shade300,
+                      ),
+                      Container(
+                        width: 140,
+                        height: 140,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.06),
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
                       ),
                       Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
                             '$healthScore',
-                            style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: healthScore > 75 ? Colors.green : healthScore > 50 ? Colors.orange : Colors.red,
+                              height: 1,
                             ),
                           ),
-                          const Text('/ 100', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                          const SizedBox(height: 4),
+                          Text('/ 100', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
                         ],
                       ),
                     ],
@@ -751,23 +690,114 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
           _buildScoreComponent('Energy Levels', _summary.avgEnergy > 5 ? 5 : 0, 5, Colors.orange),
           
           const SizedBox(height: 24),
-          CardContainer(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('AI-Generated Daily Tips', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                _buildDailyTip('💪', 'Start with light exercise today'),
-                _buildDailyTip('🥗', 'Increase iron intake this week'),
-                _buildDailyTip('💤', 'Aim for 8 hours of sleep'),
-                _buildDailyTip('🧘', 'Try 10 minutes of meditation'),
-              ],
-            ),
-          ),
+          _buildDailyTipsCard(),
         ],
       ),
     );
+  }
+
+  Widget _buildNonAiInsightsCard() {
+    final insights = _buildNonAiInsights();
+    return CardContainer(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Based on your tracked data', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          ...insights.map((text) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('• ', style: TextStyle(fontSize: 16)),
+                  Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  List<String> _buildNonAiInsights() {
+    final insights = <String>[];
+    if (_logs.isEmpty) {
+      return ['Log a few days of mood, energy, and pain to unlock insights.'];
+    }
+
+    if (_summary.avgPain >= 6) {
+      insights.add('Pain levels are trending high. Consider rest, hydration, and gentle movement.');
+    } else if (_summary.avgPain <= 2) {
+      insights.add('Pain levels are generally low. Keep up the consistency in tracking.');
+    }
+
+    if (_summary.avgEnergy <= 4) {
+      insights.add('Energy is trending low. Prioritize sleep and lighter activities when possible.');
+    } else if (_summary.avgEnergy >= 7) {
+      insights.add('Energy looks strong. This may be a good time for workouts or active days.');
+    }
+
+    final inPeriod = _painCorrelation['inPeriod'] ?? 0.0;
+    final outPeriod = _painCorrelation['outPeriod'] ?? 0.0;
+    if (inPeriod > outPeriod + 1) {
+      insights.add('Pain is higher during your period compared to other days.');
+    } else if (outPeriod > inPeriod + 1) {
+      insights.add('Pain is higher outside your period. Consider tracking triggers in notes.');
+    }
+
+    if (_cycles.isNotEmpty) {
+      final lastCycle = _cycles.reduce((a, b) => a.startDate.isAfter(b.startDate) ? a : b);
+      final daysInCycle = DateTime.now().difference(lastCycle.startDate).inDays;
+      if (daysInCycle <= 5) {
+        insights.add('You are likely in the menstrual phase. Rest and hydration can help.');
+      } else if (daysInCycle <= 12) {
+        insights.add('You may be in the follicular phase. Energy typically rises in this window.');
+      } else if (daysInCycle <= 16) {
+        insights.add('You may be near ovulation. Many people report peak energy now.');
+      } else {
+        insights.add('You may be in the luteal phase. Plan for recovery and self-care.');
+      }
+    }
+
+    return insights.isEmpty ? ['Keep logging daily to surface more insights.'] : insights;
+  }
+
+  Widget _buildDailyTipsCard() {
+    final tips = _buildDailyTips();
+    return CardContainer(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Daily Tips', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          ...tips.map((tip) => _buildDailyTip(tip.icon, tip.text)).toList(),
+        ],
+      ),
+    );
+  }
+
+  List<_DailyTip> _buildDailyTips() {
+    final tips = <_DailyTip>[];
+    if (_summary.avgEnergy <= 4) {
+      tips.add(_DailyTip('💤', 'Aim for 7-9 hours of sleep tonight.'));
+    } else {
+      tips.add(_DailyTip('💪', 'Try a light workout or a long walk today.'));
+    }
+    if (_summary.avgPain >= 6) {
+      tips.add(_DailyTip('🧘', 'Use heat therapy or a short stretching routine.'));
+    } else {
+      tips.add(_DailyTip('💧', 'Stay hydrated throughout the day.'));
+    }
+    if (_summary.avgMood <= 4) {
+      tips.add(_DailyTip('🫶', 'Plan a calming activity or reach out to support.'));
+    } else {
+      tips.add(_DailyTip('🥗', 'Add a nutrient-dense meal today.'));
+    }
+    return tips;
   }
 
   // Helper widgets
@@ -815,42 +845,6 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
           ),
           const SizedBox(width: 8),
           Text('$percentage%', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSymptomCard(String emoji, String name, int count, int percentage) {
-    return CardContainer(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Text(emoji, style: const TextStyle(fontSize: 20)),
-                  const SizedBox(width: 8),
-                  Text(name, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
-                ],
-              ),
-              Text('$count times', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: percentage / 100,
-              minHeight: 6,
-              backgroundColor: Colors.grey.shade300,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.pink.shade600),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text('$percentage% of logs', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
         ],
       ),
     );
@@ -1176,6 +1170,13 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
       ),
     );
   }
+}
+
+class _DailyTip {
+  final String icon;
+  final String text;
+
+  _DailyTip(this.icon, this.text);
 }
 
 class _StatCard extends StatelessWidget {

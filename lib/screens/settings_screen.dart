@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import '../services/auth_service.dart';
+import '../services/health_log_service.dart';
 import 'login_screen.dart';
 import 'chatbot_screen.dart';
 
@@ -12,6 +16,9 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final AuthService _authService = AuthService();
+  final HealthLogService _healthLogService = HealthLogService();
+  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final FirebaseDatabase _db = FirebaseDatabase.instance;
   
   bool _notificationsEnabled = true;
   bool _darkModeEnabled = false;
@@ -37,13 +44,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.person,
                   title: 'Profile',
                   subtitle: 'Manage your profile information',
-                  onTap: () => _showComingSoon(),
+                  onTap: () => _showProfileDialog(),
                 ),
                 _buildSettingsTile(
                   icon: Icons.lock,
                   title: 'Change Password',
                   subtitle: 'Update your password',
-                  onTap: () => _showComingSoon(),
+                  onTap: () => _showChangePasswordDialog(),
                 ),
               ],
             ),
@@ -83,7 +90,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.medical_information,
                   title: 'Health Data Export',
                   subtitle: 'Download your health logs',
-                  onTap: () => _showComingSoon(),
+                  onTap: () => _exportHealthData(),
                 ),
               ],
             ),
@@ -95,13 +102,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.privacy_tip,
                   title: 'Privacy Policy',
                   subtitle: 'Read our privacy terms',
-                  onTap: () => _showComingSoon(),
+                  onTap: () => _showPrivacyPolicy(),
                 ),
                 _buildSettingsTile(
                   icon: Icons.description,
                   title: 'Terms of Service',
                   subtitle: 'View terms and conditions',
-                  onTap: () => _showComingSoon(),
+                  onTap: () => _showTermsOfService(),
                 ),
                 _buildSettingsTile(
                   icon: Icons.delete_forever,
@@ -131,13 +138,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.help,
                   title: 'Help & FAQ',
                   subtitle: 'Common questions and answers',
-                  onTap: () => _showComingSoon(),
+                  onTap: () => _showHelpFaq(),
                 ),
                 _buildSettingsTile(
                   icon: Icons.bug_report,
                   title: 'Report a Bug',
                   subtitle: 'Help us improve Flowra',
-                  onTap: () => _showComingSoon(),
+                  onTap: () => _showBugReport(),
                 ),
                 _buildSettingsTile(
                   icon: Icons.info,
@@ -264,6 +271,254 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _showProfileDialog() async {
+    final user = _firebaseAuth.currentUser;
+    final nameCtrl = TextEditingController(text: user?.displayName ?? '');
+    final photoCtrl = TextEditingController(text: user?.photoURL ?? '');
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit Profile'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: 'Display name'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: photoCtrl,
+              decoration: const InputDecoration(labelText: 'Photo URL (optional)'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await user?.updateDisplayName(nameCtrl.text.trim());
+                if (photoCtrl.text.trim().isNotEmpty) {
+                  await user?.updatePhotoURL(photoCtrl.text.trim());
+                }
+                if (!mounted) return;
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Profile updated')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to update profile: $e')),
+                );
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showChangePasswordDialog() async {
+    final currentCtrl = TextEditingController();
+    final newCtrl = TextEditingController();
+    final confirmCtrl = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Change Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: currentCtrl,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Current password'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: newCtrl,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'New password'),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: confirmCtrl,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Confirm new password'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (newCtrl.text != confirmCtrl.text) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('New passwords do not match')),
+                );
+                return;
+              }
+              try {
+                final user = _firebaseAuth.currentUser;
+                final email = user?.email;
+                if (user == null || email == null) {
+                  throw Exception('Not authenticated');
+                }
+                final credential = EmailAuthProvider.credential(
+                  email: email,
+                  password: currentCtrl.text,
+                );
+                await user.reauthenticateWithCredential(credential);
+                await user.updatePassword(newCtrl.text);
+                if (!mounted) return;
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Password updated')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to update password: $e')),
+                );
+              }
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _exportHealthData() async {
+    try {
+      final logs = await _healthLogService.fetchLogsOnce();
+      final payload = logs.map((l) => l.toJson()).toList();
+      final jsonStr = payload.map((e) => e.toString()).join('\n');
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Health Data Export'),
+          content: SizedBox(
+            width: 400,
+            child: SingleChildScrollView(
+              child: SelectableText(jsonStr),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: jsonStr));
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Copied to clipboard')),
+                );
+              },
+              child: const Text('Copy'),
+            ),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Export failed: $e')),
+      );
+    }
+  }
+
+  void _showPrivacyPolicy() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Privacy Policy'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'We only collect data you enter to provide tracking and insights. '
+            'Your data is stored securely and is not sold or shared with third parties. '
+            'You can delete your data at any time from Settings.',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  void _showTermsOfService() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Terms of Service'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'Flowra provides wellness tracking tools and safety features. '
+            'It is not a substitute for professional medical advice. '
+            'Use the SOS feature responsibly and verify your contact information.',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  void _showHelpFaq() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Help & FAQ'),
+        content: const SingleChildScrollView(
+          child: Text(
+            '• Track your cycle in the Period Tracker.\n'
+            '• Log mood, energy, and pain in Health Logging.\n'
+            '• Use Insights to view trends.\n'
+            '• Add trusted contacts for SOS alerts.',
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  void _showBugReport() {
+    final template = 'Flowra Bug Report\\n'
+        '1) What happened?\\n'
+        '2) Steps to reproduce:\\n'
+        '3) Expected result:\\n'
+        '4) Actual result:\\n'
+        '5) Device/OS:\\n';
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Report a Bug'),
+        content: const Text('Copy the template and send it to support@flowra.app'),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: template));
+              if (!mounted) return;
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Bug report template copied')),
+              );
+            },
+            child: const Text('Copy Template'),
+          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
   void _showAboutDialog() {
     showAboutDialog(
       context: context,
@@ -323,11 +578,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Account deletion feature coming soon!')),
-              );
+              try {
+                final user = _firebaseAuth.currentUser;
+                final uid = user?.uid;
+                if (uid == null) throw Exception('Not authenticated');
+
+                // Best-effort data cleanup
+                await _db.ref('health_logs/$uid').remove();
+                await _db.ref('cycles/$uid').remove();
+                await _db.ref('recent_cycles/$uid').remove();
+                await _db.ref('contacts/$uid').remove();
+
+                await user?.delete();
+                if (!mounted) return;
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Delete failed: $e')),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Delete'),

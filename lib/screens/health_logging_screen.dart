@@ -67,14 +67,6 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> {
   bool _ironTaken = false;
   final TextEditingController _foodNotesCtrl = TextEditingController();
 
-  // Reproductive
-  String _cervicalMucus = '';
-  String _ovulationTest = 'Not taken';
-  int _libido = 5;
-  bool _sexualActivity = false;
-  bool _sexualProtected = false;
-  final TextEditingController _sexualDiscomfortCtrl = TextEditingController();
-
   // Mental health
   String _stressLevel = 'Medium';
   final TextEditingController _stressReasonCtrl = TextEditingController();
@@ -94,7 +86,6 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> {
   @override
   void dispose() {
     _foodNotesCtrl.dispose();
-    _sexualDiscomfortCtrl.dispose();
     _stressReasonCtrl.dispose();
     _medsCtrl.dispose();
     _notesController.dispose();
@@ -124,12 +115,6 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> {
         cravings: _cravings.toList(),
         ironTaken: _ironTaken,
         foodNotes: _foodNotesCtrl.text.trim(),
-        cervicalMucus: _cervicalMucus,
-        ovulationTest: _ovulationTest,
-        libido: _libido,
-        sexualActivity: _sexualActivity,
-        sexualProtected: _sexualProtected,
-        sexualDiscomfort: _sexualDiscomfortCtrl.text.trim(),
         stressLevel: _stressLevel,
         stressReason: _stressReasonCtrl.text.trim(),
         energyLevel: _energyLevel,
@@ -148,31 +133,105 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> {
     }
   }
 
-  Widget _sectionTitle(String text) => Text(text, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold));
+  Widget _sectionTitle(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            text,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.pink.shade700,
+                ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            height: 3,
+            width: 36,
+            decoration: BoxDecoration(
+              color: Colors.pink.shade200,
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Navigator.pop(context)),
         title: const Text('Log Your Health'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.pink.shade700,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Date
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Date', style: TextStyle(fontSize: 12, color: Colors.grey)),
-              Text('${_date.toLocal().toString().split(' ')[0]}', style: const TextStyle(fontWeight: FontWeight.bold)),
-            ]),
-            TextButton.icon(onPressed: () async {
-              final picked = await showDatePicker(context: context, initialDate: _date, firstDate: DateTime.now().subtract(const Duration(days: 365)), lastDate: DateTime.now());
-              if (picked != null) setState(() => _date = picked);
-            }, icon: const Icon(Icons.calendar_today), label: const Text('Change'))
-          ]),
-          const SizedBox(height: 12),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.pink.shade50, Colors.white],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            CardContainer(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.pink.shade100,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.favorite, color: Colors.pink.shade600),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Today\'s Check-In',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Takes under 2 minutes - your data stays private.',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Date
+            CardContainer(
+              padding: const EdgeInsets.all(12),
+              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Date', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  Text('${_date.toLocal().toString().split(' ')[0]}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                ]),
+                TextButton.icon(onPressed: () async {
+                  final picked = await showDatePicker(context: context, initialDate: _date, firstDate: DateTime.now().subtract(const Duration(days: 365)), lastDate: DateTime.now());
+                  if (picked != null) setState(() => _date = picked);
+                }, icon: const Icon(Icons.calendar_today), label: const Text('Change'))
+              ]),
+            ),
+            const SizedBox(height: 12),
 
           // Period & cycle
           _sectionTitle('Period Status'),
@@ -269,22 +328,6 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> {
           ])),
           const SizedBox(height: 12),
 
-          // Reproductive
-          _sectionTitle('Reproductive & Fertility'),
-          const SizedBox(height: 8),
-          CardContainer(padding: const EdgeInsets.all(12), child: Column(children: [
-            TextField(decoration: const InputDecoration(labelText: 'Cervical mucus (optional)'), onChanged: (v)=> setState(()=> _cervicalMucus = v)),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(value: _ovulationTest, items: ['Not taken','Positive','Negative'].map((s)=>DropdownMenuItem(value: s, child: Text(s))).toList(), onChanged: (v)=> setState(()=> _ovulationTest = v ?? 'Not taken'), decoration: const InputDecoration(border: InputBorder.none)),
-            const SizedBox(height: 8),
-            Row(children: [const Text('Libido'), Expanded(child: Slider(value: _libido.toDouble(), min: 0, max: 10, divisions: 10, onChanged: (v)=> setState(()=> _libido = v.toInt())))]),
-            const SizedBox(height: 8),
-            Row(children: [const Text('Sexual activity?'), Switch(value: _sexualActivity, onChanged: (v)=> setState(()=> _sexualActivity = v)), const SizedBox(width: 8), const Text('Protected?'), Switch(value: _sexualProtected, onChanged: (v)=> setState(()=> _sexualProtected = v))]),
-            const SizedBox(height: 8),
-            TextField(controller: _sexualDiscomfortCtrl, decoration: const InputDecoration(labelText: 'Discomfort (optional)')),
-          ])),
-          const SizedBox(height: 12),
-
           // Mental Health
           _sectionTitle('Stress & Energy'),
           const SizedBox(height: 8),
@@ -315,6 +358,7 @@ class _HealthLoggingScreenState extends State<HealthLoggingScreen> {
           PrimaryButton(label: _saving ? 'Saving...' : 'Save Log', onPressed: _saving ? null : _saveLog),
           const SizedBox(height: 24),
         ]),
+      ),
       ),
       floatingActionButton: FloatingActionButton.extended(onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => const SosScreen())); }, backgroundColor: Colors.red.shade600, icon: const Icon(Icons.emergency, color: Colors.white), label: const Text('SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
     );

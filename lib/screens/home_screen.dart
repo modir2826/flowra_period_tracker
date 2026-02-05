@@ -27,12 +27,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         title: Text(
-          'Flowra 🌸',
+          'Flowra',
           style: TextStyle(
             color: Colors.pink.shade700,
             fontWeight: FontWeight.bold,
@@ -58,12 +58,40 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Row(
-        children: [
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SosScreen()),
+          );
+        },
+        backgroundColor: Colors.red.shade600,
+        icon: const Icon(Icons.emergency, color: Colors.white),
+        label: const Text('Emergency SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.pink.shade50, const Color(0xFFFFF7FA), Colors.white],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Row(
+          children: [
           // Sidebar
           Container(
             width: 280,
-            color: Colors.white,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 16,
+                  offset: const Offset(2, 0),
+                ),
+              ],
+            ),
             child: Column(
               children: [
                 // Logo/Title in sidebar
@@ -79,6 +107,28 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.favorite, color: Colors.white),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Flowra',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
                       Text(
                         'Menu',
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -182,24 +232,47 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Welcome Section
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(22),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.pink.shade400, Colors.pink.shade700],
+                          colors: [Colors.pink.shade500, Colors.pink.shade700],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.pink.shade200.withOpacity(0.5),
+                            blurRadius: 16,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Welcome back! 👋',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Welcome back! 👋',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(999),
                                 ),
+                                child: Text(
+                                  'Today',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white),
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 8),
                           Text(
@@ -208,10 +281,94 @@ class _HomeScreenState extends State<HomeScreen> {
                                   color: Colors.white70,
                                 ),
                           ),
+                          const SizedBox(height: 16),
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              _QuickActionCard(
+                                label: 'Log Health',
+                                icon: Icons.mood,
+                                color: Colors.white,
+                                textColor: Colors.pink.shade700,
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const HealthLoggingScreen()),
+                                ),
+                              ),
+                              _QuickActionCard(
+                                label: 'Track Period',
+                                icon: Icons.calendar_today,
+                                color: Colors.white,
+                                textColor: Colors.pink.shade700,
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const CycleTrackerScreen()),
+                                ),
+                              ),
+                              _QuickActionCard(
+                                label: 'Insights',
+                                icon: Icons.show_chart,
+                                color: Colors.white,
+                                textColor: Colors.pink.shade700,
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const InsightsScreen()),
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 32),
+
+                    // Quick Actions Section
+                    Text(
+                      'Quick Actions',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade800,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        _FeatureCard(
+                          title: 'Wellness',
+                          subtitle: 'Guided self-care',
+                          icon: Icons.self_improvement,
+                          color: Colors.green.shade600,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const WellnessScreen()),
+                          ),
+                        ),
+                        _FeatureCard(
+                          title: 'Trusted Contacts',
+                          subtitle: 'Manage safety circle',
+                          icon: Icons.people,
+                          color: Colors.indigo.shade600,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ContactsScreen()),
+                          ),
+                        ),
+                        _FeatureCard(
+                          title: 'AI Assistant',
+                          subtitle: 'Ask Flowra',
+                          icon: Icons.chat_bubble_outline,
+                          color: Colors.pink.shade600,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const ChatbotScreen()),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 28),
 
                     // Period Insight Section
                     Text(
@@ -319,7 +476,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                 width: double.infinity,
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.purple.shade50,
+                                  gradient: LinearGradient(
+                                    colors: [Colors.purple.shade50, Colors.pink.shade50],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(color: Colors.purple.shade200),
                                 ),
@@ -355,18 +516,8 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SosScreen()),
-          );
-        },
-        backgroundColor: Colors.red.shade600,
-        icon: const Icon(Icons.emergency, color: Colors.white),
-        label: const Text('Emergency SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      ),
-    );
+      
+    ));
   }
 }
 
@@ -408,6 +559,128 @@ class _SidebarItem extends StatelessWidget {
               style: TextStyle(
                 color: isSelected ? Colors.pink.shade600 : Colors.grey.shade600,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final Color textColor;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.textColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: textColor, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: textColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FeatureCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _FeatureCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 220,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
+                  ),
+                ],
               ),
             ),
           ],

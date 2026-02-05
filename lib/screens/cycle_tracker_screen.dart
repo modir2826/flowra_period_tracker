@@ -243,56 +243,150 @@ class _CycleTrackerScreenState extends State<CycleTrackerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Cycle Tracker')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Your Cycles', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            CardContainer(
-              padding: const EdgeInsets.all(16),
-              child: StreamBuilder<List<CycleModel>>(
-                stream: _cycleService.streamCycles(),
-                builder: (context, snap) {
-                  if (snap.connectionState == ConnectionState.waiting) {
-                    return const SizedBox(height: 100, child: Center(child: CircularProgressIndicator()));
-                  }
-                  final cycles = snap.data ?? [];
-                  final avg = _cycleService.averageCycleLength(cycles).toStringAsFixed(1);
-                  final predicted = _cycleService.predictNextCycleStart(cycles);
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Average Cycle', style: Theme.of(context).textTheme.bodySmall),
-                              Text('$avg days', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                          if (predicted != null)
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text('Next Period', style: Theme.of(context).textTheme.bodySmall),
-                                Text(predicted.toLocal().toString().split(' ')[0], style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                              ],
-                            )
-                          else
-                            Text('No data yet', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
-                        ],
-                      ),
-                    ],
-                  );
-                },
+      appBar: AppBar(
+        title: const Text('Cycle Tracker'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.pink.shade700,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.pink.shade50, const Color(0xFFFFF7FA), Colors.white],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.pink.shade500, Colors.pink.shade700],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.pink.shade200.withOpacity(0.5),
+                      blurRadius: 16,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Cycle Overview',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                        const Icon(Icons.calendar_month, color: Colors.white),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Track patterns and plan with confidence',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        _HeaderAction(
+                          icon: Icons.calendar_today,
+                          label: 'Add Period',
+                          onTap: () async {
+                            final now = DateTime.now();
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: now,
+                              firstDate: DateTime(now.year - 10),
+                              lastDate: now,
+                            );
+                            if (picked != null) setState(() => _pickedDate = picked);
+                          },
+                        ),
+                        const SizedBox(width: 12),
+                        _HeaderAction(
+                          icon: Icons.history,
+                          label: 'Add Previous',
+                          onTap: _showAddPreviousCycleDialog,
+                        ),
+                        const SizedBox(width: 12),
+                        _HeaderAction(
+                          icon: Icons.library_add,
+                          label: 'Add Multiple',
+                          onTap: _showBulkAddDialog,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(height: 24),
+              Text('Your Cycles', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              CardContainer(
+                padding: const EdgeInsets.all(16),
+                child: StreamBuilder<List<CycleModel>>(
+                  stream: _cycleService.streamCycles(),
+                  builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return const SizedBox(height: 100, child: Center(child: CircularProgressIndicator()));
+                    }
+                    final cycles = snap.data ?? [];
+                    final avg = _cycleService.averageCycleLength(cycles).toStringAsFixed(1);
+                    final predicted = _cycleService.predictNextCycleStart(cycles);
+                    final last = cycles.isNotEmpty ? cycles.first : null;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _StatPill(
+                                title: 'Average Cycle',
+                                value: '$avg days',
+                                icon: Icons.timeline,
+                                color: Colors.pink.shade600,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _StatPill(
+                                title: 'Next Period',
+                                value: predicted != null ? predicted.toLocal().toString().split(' ')[0] : 'No data',
+                                icon: Icons.event,
+                                color: Colors.purple.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _StatPill(
+                          title: 'Last Period',
+                          value: last != null ? last.startDate.toLocal().toString().split(' ')[0] : 'No data',
+                          icon: Icons.favorite,
+                          color: Colors.teal.shade600,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
             const SizedBox(height: 24),
             Text('Recent Cycles', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
@@ -317,14 +411,25 @@ class _CycleTrackerScreenState extends State<CycleTrackerScreen> {
                     return CardContainer(
                       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Start: ${c.startDate.toLocal().toString().split(' ')[0]}', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
-                              Text('${c.cycleLength}d cycle · ${c.periodLength}d period', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
-                            ],
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.pink.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(Icons.water_drop, color: Colors.pink.shade600),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Start: ${c.startDate.toLocal().toString().split(' ')[0]}', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
+                                Text('${c.cycleLength}d cycle | ${c.periodLength}d period', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                              ],
+                            ),
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete_outline),
@@ -342,61 +447,76 @@ class _CycleTrackerScreenState extends State<CycleTrackerScreen> {
             const SizedBox(height: 16),
             Text('Add New Period', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () async {
-                      final now = DateTime.now();
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: now,
-                        firstDate: DateTime(now.year - 10),
-                        lastDate: now,
-                      );
-                      if (picked != null) setState(() => _pickedDate = picked);
-                    },
-                    icon: const Icon(Icons.calendar_today),
-                    label: Text(_pickedDate == null ? 'Pick start date' : _pickedDate!.toLocal().toString().split(' ')[0]),
+            CardContainer(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final now = DateTime.now();
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: now,
+                              firstDate: DateTime(now.year - 10),
+                              lastDate: now,
+                            );
+                            if (picked != null) setState(() => _pickedDate = picked);
+                          },
+                          icon: const Icon(Icons.calendar_today),
+                          label: Text(_pickedDate == null ? 'Pick start date' : _pickedDate!.toLocal().toString().split(' ')[0]),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(labelText: 'Period days ($_periodLength)', hintText: 'e.g. 5'),
-                    onChanged: (v) {
-                      final parsed = int.tryParse(v) ?? 5;
-                      setState(() => _periodLength = parsed.clamp(1, 14));
-                    },
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(labelText: 'Period days ($_periodLength)', hintText: 'e.g. 5'),
+                          onChanged: (v) {
+                            final parsed = int.tryParse(v) ?? 5;
+                            setState(() => _periodLength = parsed.clamp(1, 14));
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            PrimaryButton(
-              label: 'Save Period Start',
-              onPressed: _pickedDate == null
-                  ? null
-                  : () async {
-                      await _confirmSave();
-                    },
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _showAddPreviousCycleDialog,
-              icon: const Icon(Icons.history),
-              label: const Text('Add Previous Cycle'),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _showBulkAddDialog,
-              icon: const Icon(Icons.library_add),
-              label: const Text('Add Multiple Previous Cycles'),
+                  const SizedBox(height: 16),
+                  PrimaryButton(
+                    label: 'Save Period Start',
+                    onPressed: _pickedDate == null
+                        ? null
+                        : () async {
+                            await _confirmSave();
+                          },
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _showAddPreviousCycleDialog,
+                          icon: const Icon(Icons.history),
+                          label: const Text('Add Previous Cycle'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _showBulkAddDialog,
+                          icon: const Icon(Icons.library_add),
+                          label: const Text('Add Multiple'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
             StreamBuilder<List<CycleModel>>(
               stream: _cycleService.streamRecentCycles(),
@@ -441,6 +561,7 @@ class _CycleTrackerScreenState extends State<CycleTrackerScreen> {
           ],
         ),
       ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const SosScreen()));
@@ -456,4 +577,93 @@ class _CycleTrackerScreenState extends State<CycleTrackerScreen> {
 class _BulkEntry {
   DateTime? date;
   int periodLength = 5;
+}
+
+class _HeaderAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _HeaderAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.18),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withOpacity(0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _StatPill({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600)),
+                const SizedBox(height: 4),
+                Text(value, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

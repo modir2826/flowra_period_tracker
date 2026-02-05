@@ -87,13 +87,20 @@ class _SosScreenState extends State<SosScreen> {
         pos = null;
       }
 
-      // Send SOS to backend
-      await NotificationService().triggerSos(
-        trusted,
-        message: 'Emergency! I need help.',
-        latitude: pos?.latitude,
-        longitude: pos?.longitude,
-      );
+      bool simulated = false;
+      try {
+        // Send SOS to backend
+        await NotificationService().triggerSos(
+          trusted,
+          message: 'Emergency! I need help.',
+          latitude: pos?.latitude,
+          longitude: pos?.longitude,
+        );
+      } catch (_) {
+        // Graceful fallback for demo/offline mode
+        simulated = true;
+        await Future.delayed(const Duration(milliseconds: 600));
+      }
       if (!mounted) return;
       Navigator.pop(context); // remove loading
 
@@ -109,7 +116,7 @@ class _SosScreenState extends State<SosScreen> {
             children: [
               const Icon(Icons.check_circle, color: Colors.green, size: 50),
               const SizedBox(height: 16),
-              const Text('Emergency alert sent to your trusted contacts'),
+              Text(simulated ? 'Emergency alert simulated (demo mode)' : 'Emergency alert sent to your trusted contacts'),
               const SizedBox(height: 8),
               Text(pos != null ? 'Location shared: ${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)}' : 'Location unavailable'),
               const SizedBox(height: 16),
@@ -152,9 +159,9 @@ class _SosScreenState extends State<SosScreen> {
     return WillPopScope(
       onWillPop: () async => !_sosActivated,
       child: Scaffold(
-        backgroundColor: Colors.grey.shade50,
+        backgroundColor: Colors.transparent,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
           elevation: 0,
           leading: _sosActivated
               ? null
@@ -171,11 +178,19 @@ class _SosScreenState extends State<SosScreen> {
           ),
           automaticallyImplyLeading: !_sosActivated,
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.pink.shade50, Colors.white],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
               const SizedBox(height: 20),
               
               // Status
@@ -426,7 +441,8 @@ class _SosScreenState extends State<SosScreen> {
                     ),
                   ),
                 ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

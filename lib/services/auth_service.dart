@@ -73,9 +73,8 @@ class AuthService {
       final snapshot = await _database.ref('users/${user.uid}').get();
       
       if (snapshot.exists) {
-        UserModel userModel = UserModel.fromJson(
-          Map<String, dynamic>.from(snapshot.value as Map),
-        );
+        final data = _castStringKeyMap(snapshot.value);
+        UserModel userModel = UserModel.fromJson(data);
         return userModel;
       }
 
@@ -120,9 +119,8 @@ class AuthService {
       final snapshot = await _database.ref('users/$uid').get();
       
       if (snapshot.exists) {
-        return UserModel.fromJson(
-          Map<String, dynamic>.from(snapshot.value as Map),
-        );
+        final data = _castStringKeyMap(snapshot.value);
+        return UserModel.fromJson(data);
       }
       return null;
     } catch (e) {
@@ -178,5 +176,21 @@ class AuthService {
       default:
         return 'An error occurred: ${e.message}';
     }
+  }
+
+  Map<String, dynamic> _castStringKeyMap(dynamic value) {
+    if (value is! Map) {
+      return <String, dynamic>{};
+    }
+    final result = <String, dynamic>{};
+    value.forEach((k, v) {
+      final key = k?.toString() ?? '';
+      if (v is Map) {
+        result[key] = _castStringKeyMap(v);
+      } else {
+        result[key] = v;
+      }
+    });
+    return result;
   }
 }
