@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import '../models/contact_model.dart';
 import '../services/contacts_service.dart';
@@ -27,13 +28,20 @@ class _ContactsScreenState extends State<ContactsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(controller: nameCtl, decoration: const InputDecoration(labelText: 'Name')),
-            TextField(controller: phoneCtl, decoration: const InputDecoration(labelText: 'Phone')),
+            TextField(
+              controller: phoneCtl,
+              keyboardType: TextInputType.phone,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[\d+\-\s\(\)]')),
+              ],
+              decoration: const InputDecoration(labelText: 'Phone'),
+            ),
             TextField(controller: relationCtl, decoration: const InputDecoration(labelText: 'Relation')),
           ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
+          ElevatedButton.icon(
             onPressed: () async {
               final navigator = Navigator.of(ctx);
               final messenger = ScaffoldMessenger.of(ctx);
@@ -44,7 +52,19 @@ class _ContactsScreenState extends State<ContactsScreen> {
                 messenger.showSnackBar(const SnackBar(content: Text('Name and phone required')));
                 return;
               }
+              final digitsOnly = phone.replaceAll(RegExp(r'\D'), '');
+              if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+                messenger.showSnackBar(const SnackBar(content: Text('Enter a valid phone number')));
+                return;
+              }
               try {
+                if (existing == null) {
+                  final current = await _service.fetchContactsOnce();
+                  if (current.length >= 5) {
+                    messenger.showSnackBar(const SnackBar(content: Text('You can add up to 5 contacts only')));
+                    return;
+                  }
+                }
                 final model = ContactModel(id: existing?.id, name: name, phone: phone, relation: rel, trusted: existing?.trusted ?? false, createdAt: existing?.createdAt);
                 if (existing == null) {
                   await _service.addContact(model);
@@ -56,7 +76,15 @@ class _ContactsScreenState extends State<ContactsScreen> {
                 messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
               }
             },
-            child: const Text('Save'),
+            icon: Icon(existing == null ? Icons.save : Icons.edit),
+            label: Text(existing == null ? 'Save Contact' : 'Update Contact'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.pink.shade600,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 2,
+            ),
           ),
         ],
       ),
@@ -215,7 +243,18 @@ class _ContactsScreenState extends State<ContactsScreen> {
                                 content: Text('Remove ${c.name}?'),
                                 actions: [
                                   TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                                  ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete')),
+                                  ElevatedButton.icon(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    icon: const Icon(Icons.delete_forever),
+                                    label: const Text('Delete'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.red.shade600,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      elevation: 2,
+                                    ),
+                                  ),
                                 ],
                               ),
                             );

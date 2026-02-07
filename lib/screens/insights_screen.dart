@@ -358,9 +358,51 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
   }
 
   Widget _buildSleepTab() {
-    // Sleep hours from notes/logs - not directly tracked so use average
-    const avgSleep = 7.5;
-    
+    final sleepLogs = _logs.where((l) => l.sleepHours != null).toList();
+    final avgSleep = sleepLogs.isEmpty
+        ? null
+        : sleepLogs.map((l) => l.sleepHours!).reduce((a, b) => a + b) / sleepLogs.length;
+    final qualityCounts = {'Poor': 0, 'Okay': 0, 'Good': 0};
+    for (final l in _logs) {
+      final q = l.sleepQuality;
+      if (q != null && qualityCounts.containsKey(q)) {
+        qualityCounts[q] = (qualityCounts[q] ?? 0) + 1;
+      }
+    }
+    final totalQuality = qualityCounts.values.fold<int>(0, (a, b) => a + b);
+    String qualityLabel = 'No data';
+    if (totalQuality > 0) {
+      qualityLabel = qualityCounts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+    }
+
+    List<String> poorSleepInsights = [];
+    List<String> goodSleepInsights = [];
+    if (sleepLogs.isEmpty) {
+      poorSleepInsights = ['Log sleep hours to see trends.'];
+      goodSleepInsights = ['Log sleep hours to see trends.'];
+    } else {
+      final poor = sleepLogs.where((l) => l.sleepHours! < 6.5).toList();
+      final good = sleepLogs.where((l) => l.sleepHours! >= 7.5).toList();
+
+      if (poor.isNotEmpty) {
+        final avgPain = poor.map((l) => l.painIntensity).reduce((a, b) => a + b) / poor.length;
+        final avgEnergy = poor.map((l) => l.energy).reduce((a, b) => a + b) / poor.length;
+        poorSleepInsights.add('Avg pain on <6.5h nights: ${avgPain.toStringAsFixed(1)}/10');
+        poorSleepInsights.add('Avg energy on <6.5h nights: ${avgEnergy.toStringAsFixed(1)}/10');
+      } else {
+        poorSleepInsights.add('No low-sleep nights logged yet.');
+      }
+
+      if (good.isNotEmpty) {
+        final avgMood = good.map((l) => l.moodIntensity).reduce((a, b) => a + b) / good.length;
+        final avgEnergy = good.map((l) => l.energy).reduce((a, b) => a + b) / good.length;
+        goodSleepInsights.add('Avg mood on ≥7.5h nights: ${avgMood.toStringAsFixed(1)}/5');
+        goodSleepInsights.add('Avg energy on ≥7.5h nights: ${avgEnergy.toStringAsFixed(1)}/10');
+      } else {
+        goodSleepInsights.add('No high-sleep nights logged yet.');
+      }
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -376,16 +418,22 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
               children: [
                 Text('Average Sleep Hours', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
-                Text('${avgSleep.toStringAsFixed(1)} hrs/night', 
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: avgSleep >= 7 ? Colors.green : Colors.orange,
-                  )),
+                Text(avgSleep == null ? 'No sleep data yet' : '${avgSleep.toStringAsFixed(1)} hrs/night',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: avgSleep == null ? Colors.grey : (avgSleep >= 7 ? Colors.green : Colors.orange),
+                        )),
                 const SizedBox(height: 12),
-                Text(avgSleep >= 7 ? '✅ Good sleep pattern' : '⚠️ Consider improving sleep', 
+                Text(
+                  avgSleep == null
+                      ? 'Log sleep hours to see your pattern'
+                      : (avgSleep >= 7 ? '✅ Good sleep pattern' : '⚠️ Consider improving sleep'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: avgSleep >= 7 ? Colors.green : Colors.orange,
-                  )),
+                        color: avgSleep == null ? Colors.grey : (avgSleep >= 7 ? Colors.green : Colors.orange),
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text('Most common sleep quality: $qualityLabel', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade600)),
               ],
             ),
           ),
@@ -393,14 +441,36 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
           const SizedBox(height: 16),
           Text('Sleep Quality vs Symptoms', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
-          _buildSleepInsight('Poor sleep linked to:', ['Increased pain', 'Mood fluctuations', 'Lower energy']),
-          _buildSleepInsight('Better sleep linked to:', ['Stable mood', 'Higher energy', 'Reduced pain']),
+          _buildSleepInsight('Poor sleep linked to:', poorSleepInsights),
+          _buildSleepInsight('Better sleep linked to:', goodSleepInsights),
         ],
       ),
     );
   }
 
   Widget _buildNutritionTab() {
+    final hydrationLogs = _logs.where((l) => l.hydration > 0).toList();
+    final avgHydration = hydrationLogs.isEmpty
+        ? null
+        : hydrationLogs.map((l) => l.hydration).reduce((a, b) => a + b) / hydrationLogs.length;
+    final goalLogs = _logs.where((l) => l.hydrationGoal != null && l.hydrationGoal! > 0).toList();
+    final avgGoal = goalLogs.isEmpty
+        ? 8
+        : (goalLogs.map((l) => l.hydrationGoal!).reduce((a, b) => a + b) / goalLogs.length).round();
+    final ironLogs = _logs.where((l) => l.ironTaken).length;
+    final ironRate = _logs.isEmpty ? 0 : (ironLogs / _logs.length * 100).round();
+
+    final cravingCounts = <String, int>{};
+    for (final l in _logs) {
+      for (final c in l.cravings) {
+        cravingCounts[c] = (cravingCounts[c] ?? 0) + 1;
+      }
+    }
+    final topCravings = cravingCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    final topCravingText = topCravings.isEmpty
+        ? 'No cravings logged yet'
+        : topCravings.take(3).map((e) => '${e.key} (${e.value})').join(', ');
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -422,18 +492,22 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Iron-Rich Foods', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                          Text('Iron Intake', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
                           const SizedBox(height: 4),
-                          Text('Essential during menstruation to replenish iron loss', 
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                          Text(
+                            _logs.isEmpty
+                                ? 'Log your nutrition to see iron trends'
+                                : 'Iron taken in $ironRate% of logs',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                          ),
                         ],
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text('Foods: Red meat, spinach, lentils, beans, fortified cereals', 
-                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
+                const Text('Foods: Red meat, spinach, lentils, beans, fortified cereals',
+                    style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
               ],
             ),
           ),
@@ -454,16 +528,24 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
                         children: [
                           Text('Hydration Tracking', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
                           const SizedBox(height: 4),
-                          Text('Stay hydrated throughout your cycle', 
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                          Text(
+                            avgHydration == null
+                                ? 'Log hydration to see your average'
+                                : 'Average: ${avgHydration.toStringAsFixed(1)} / $avgGoal glasses',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                          ),
                         ],
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text('Goal: 8-10 glasses of water daily', 
-                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
+                Text(
+                  avgHydration == null
+                      ? 'Goal: 8-10 glasses of water daily'
+                      : (avgHydration >= avgGoal ? '✅ On track with hydration' : '⚠️ Below hydration goal'),
+                  style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                ),
               ],
             ),
           ),
@@ -484,16 +566,18 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
                         children: [
                           Text('Craving Patterns', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
                           const SizedBox(height: 4),
-                          Text('Monitor your food cravings across cycle phases', 
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                          Text(
+                            'Top cravings: $topCravingText',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                          ),
                         ],
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Text('Luteal phase: Increased sweet & salty cravings', 
-                  style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
+                const Text('Tip: Track cravings to spot cycle patterns',
+                    style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
               ],
             ),
           ),
@@ -503,6 +587,24 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
   }
 
   Widget _buildExerciseTab() {
+    final activityLogs = _logs.where((l) => l.activityType != 'None' || (l.activityDuration ?? 0) > 0).toList();
+    final durations = activityLogs.map((l) => l.activityDuration).whereType<int>().toList();
+    final avgDuration = durations.isEmpty ? null : durations.reduce((a, b) => a + b) / durations.length;
+    final activeDays = activityLogs.map((l) => '${l.timestamp.year}-${l.timestamp.month}-${l.timestamp.day}').toSet().length;
+
+    final typeCounts = <String, int>{};
+    for (final l in activityLogs) {
+      final type = l.activityType;
+      if (type.isEmpty || type == 'None') continue;
+      typeCounts[type] = (typeCounts[type] ?? 0) + 1;
+    }
+    final topType = typeCounts.isEmpty
+        ? 'No activity logged'
+        : typeCounts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+
+    final lightCount = activityLogs.where((l) => (l.activityDuration ?? 0) > 0 && (l.activityDuration ?? 0) < 45).length;
+    final heavyCount = activityLogs.where((l) => (l.activityDuration ?? 0) >= 45).length;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -511,6 +613,32 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
           Text('Exercise Impact Analysis', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
 
+          CardContainer(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Your Activity Summary', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text(
+                  activityLogs.isEmpty ? 'No activity logged yet' : 'Active days: $activeDays',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  avgDuration == null ? 'Avg duration: —' : 'Avg duration: ${avgDuration.toStringAsFixed(0)} min',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Most common activity: $topType',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey.shade700),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
           Text('Exercise Suggestions by Cycle Phase', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           
@@ -531,9 +659,9 @@ class _InsightsScreenState extends State<InsightsScreen> with SingleTickerProvid
               children: [
                 Text('Light vs Heavy Workout Tracking', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
-                _buildWorkoutBar('Light Workouts', 12, Colors.blue),
+                _buildWorkoutBar('Light Workouts', lightCount, Colors.blue),
                 const SizedBox(height: 8),
-                _buildWorkoutBar('Heavy Workouts', 8, Colors.orange),
+                _buildWorkoutBar('Heavy Workouts', heavyCount, Colors.orange),
               ],
             ),
           ),

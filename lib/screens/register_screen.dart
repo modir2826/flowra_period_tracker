@@ -38,25 +38,87 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _errorMessage = null);
 
     // Validate inputs
-    if (_nameController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _passwordController.text.isEmpty ||
-        _confirmPasswordController.text.isEmpty) {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       setState(() => _errorMessage = 'Please fill in all fields');
       return;
     }
 
-    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(_emailController.text)) {
+    if (name.length < 2) {
+      setState(() => _errorMessage = 'Name must be at least 2 characters');
+      return;
+    }
+
+    if (name.length > 50) {
+      setState(() => _errorMessage = 'Name must be 50 characters or less');
+      return;
+    }
+
+    if (!RegExp(r"^[a-zA-Z][a-zA-Z\s.'-]*$").hasMatch(name)) {
+      setState(() => _errorMessage = 'Name can only include letters, spaces, . \' and -');
+      return;
+    }
+
+    if (email.length > 254) {
+      setState(() => _errorMessage = 'Email is too long');
+      return;
+    }
+
+    if (email.contains(' ') || !RegExp(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$').hasMatch(email)) {
       setState(() => _errorMessage = 'Please enter a valid email');
       return;
     }
 
-    if (_passwordController.text.length < 6) {
-      setState(() => _errorMessage = 'Password must be at least 6 characters');
+    if (password.length < 8) {
+      setState(() => _errorMessage = 'Password must be at least 8 characters');
       return;
     }
 
-    if (_passwordController.text != _confirmPasswordController.text) {
+    if (password.length > 64) {
+      setState(() => _errorMessage = 'Password must be 64 characters or less');
+      return;
+    }
+
+    if (password.contains(' ')) {
+      setState(() => _errorMessage = 'Password cannot contain spaces');
+      return;
+    }
+
+    if (!RegExp(r'[A-Z]').hasMatch(password)) {
+      setState(() => _errorMessage = 'Password must include an uppercase letter');
+      return;
+    }
+
+    if (!RegExp(r'[a-z]').hasMatch(password)) {
+      setState(() => _errorMessage = 'Password must include a lowercase letter');
+      return;
+    }
+
+    if (!RegExp(r'\d').hasMatch(password)) {
+      setState(() => _errorMessage = 'Password must include a number');
+      return;
+    }
+
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>_\-\\/\[\]~`+=;]').hasMatch(password)) {
+      setState(() => _errorMessage = 'Password must include a special character');
+      return;
+    }
+
+    if (password.toLowerCase() == email.toLowerCase()) {
+      setState(() => _errorMessage = 'Password cannot be the same as your email');
+      return;
+    }
+
+    if (password.toLowerCase().contains(name.toLowerCase().split(' ').first)) {
+      setState(() => _errorMessage = 'Password should not contain your name');
+      return;
+    }
+
+    if (password != confirmPassword) {
       setState(() => _errorMessage = 'Passwords do not match');
       return;
     }

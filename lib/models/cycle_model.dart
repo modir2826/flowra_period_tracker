@@ -31,21 +31,37 @@ class CycleModel {
         'periodLength': periodLength,
         'flowIntensity': flowIntensity,
         'missed': missed,
-        'notes': notes ?? '',
+        'notes': notes,
         'createdAt': createdAt.toIso8601String(),
       };
 
-    factory CycleModel.fromJson(Map<String, dynamic> json) => CycleModel(
-      id: json['id'] as String?,
-      startDate: DateTime.parse(json['startDate'] as String),
-      endDate: json['endDate'] != null ? DateTime.parse(json['endDate'] as String) : null,
-      cycleLength: (json['cycleLength'] as num).toInt(),
-      periodLength: (json['periodLength'] as num?)?.toInt() ?? 0,
-      flowIntensity: (json['flowIntensity'] ?? 'Medium') as String,
-      missed: (json['missed'] ?? false) as bool,
-      notes: (json['notes'] ?? '') as String,
-      createdAt: json['createdAt'] != null
-      ? DateTime.parse(json['createdAt'] as String)
-      : DateTime.now(),
-    );
+  static DateTime _parseDate(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is DateTime) return value;
+    if (value is String) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    if (value is int) {
+      return DateTime.fromMillisecondsSinceEpoch(value);
+    }
+    if (value is double) {
+      return DateTime.fromMillisecondsSinceEpoch(value.toInt());
+    }
+    if (value is Map && value['millisecondsSinceEpoch'] is int) {
+      return DateTime.fromMillisecondsSinceEpoch(value['millisecondsSinceEpoch'] as int);
+    }
+    return DateTime.now();
+  }
+
+  factory CycleModel.fromJson(Map<String, dynamic> json) => CycleModel(
+        id: json['id'] as String?,
+        startDate: _parseDate(json['startDate']),
+        endDate: json['endDate'] != null ? _parseDate(json['endDate']) : null,
+        cycleLength: (json['cycleLength'] as num?)?.toInt() ?? 28,
+        periodLength: (json['periodLength'] as num?)?.toInt() ?? 5,
+        flowIntensity: (json['flowIntensity'] ?? 'Medium') as String,
+        missed: (json['missed'] ?? false) as bool,
+        notes: (json['notes'] ?? '') as String,
+        createdAt: json['createdAt'] != null ? _parseDate(json['createdAt']) : DateTime.now(),
+      );
 }

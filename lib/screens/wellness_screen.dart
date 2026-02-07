@@ -398,12 +398,42 @@ class _WellnessScreenState extends State<WellnessScreen> {
                                           ),
                                         ],
                                       ),
-                                      ElevatedButton.icon(
-                                        onPressed: () => _openUrl(session.url),
-                                        icon: const Icon(Icons.play_arrow),
-                                        label: const Text('Watch'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.green.shade600,
+                                      Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          onTap: () => _openUrl(session.url),
+                                          borderRadius: BorderRadius.circular(24),
+                                          child: Ink(
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                colors: [Colors.green.shade500, Colors.teal.shade600],
+                                                begin: Alignment.topLeft,
+                                                end: Alignment.bottomRight,
+                                              ),
+                                              borderRadius: BorderRadius.circular(24),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.green.shade200.withOpacity(0.6),
+                                                  blurRadius: 10,
+                                                  offset: const Offset(0, 6),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: const [
+                                                  Icon(Icons.play_circle_fill, color: Colors.white, size: 18),
+                                                  SizedBox(width: 8),
+                                                  Text(
+                                                    'Watch',
+                                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ],

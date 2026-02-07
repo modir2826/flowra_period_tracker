@@ -495,26 +495,6 @@ class _CycleTrackerScreenState extends State<CycleTrackerScreen> {
                             await _confirmSave();
                           },
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _showAddPreviousCycleDialog,
-                          icon: const Icon(Icons.history),
-                          label: const Text('Add Previous Cycle'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _showBulkAddDialog,
-                          icon: const Icon(Icons.library_add),
-                          label: const Text('Add Multiple'),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),

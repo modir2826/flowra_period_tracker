@@ -54,29 +54,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-            // App Settings Section
-            _buildSection(
-              title: 'App Settings',
-              children: [
-                _buildToggleTile(
-                  icon: Icons.notifications,
-                  title: 'Push Notifications',
-                  subtitle: 'Get reminders and alerts',
-                  value: _notificationsEnabled,
-                  onChanged: (val) => setState(() => _notificationsEnabled = val),
-                ),
-                _buildToggleTile(
-                  icon: Icons.dark_mode,
-                  title: 'Dark Mode',
-                  subtitle: 'Apply dark theme',
-                  value: _darkModeEnabled,
-                  onChanged: (val) => setState(() => _darkModeEnabled = val),
-                ),
-              ],
-            ),
             // Health Settings Section
             _buildSection(
               title: 'Health Settings',
+              titleTopPadding: 8,
               children: [
                 _buildDropdownTile(
                   icon: Icons.calendar_month,
@@ -178,14 +159,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSection({required String title, required List<Widget> children}) {
+  Widget _buildSection({
+    required String title,
+    required List<Widget> children,
+    double titleTopPadding = 16,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: EdgeInsets.fromLTRB(16, titleTopPadding, 16, 8),
             child: Text(
               title,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -262,6 +247,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _dialogPrimaryButton({
+    required String label,
+    required VoidCallback onPressed,
+    IconData? icon,
+    Color? color,
+  }) {
+    final btn = icon == null
+        ? ElevatedButton(
+            onPressed: onPressed,
+            child: Text(label),
+          )
+        : ElevatedButton.icon(
+            onPressed: onPressed,
+            icon: Icon(icon, size: 18),
+            label: Text(label),
+          );
+    return btn;
+  }
+
+  Widget _dialogSecondaryButton({
+    required String label,
+    required VoidCallback onPressed,
+    IconData? icon,
+  }) {
+    final btn = icon == null
+        ? TextButton(onPressed: onPressed, child: Text(label))
+        : TextButton.icon(onPressed: onPressed, icon: Icon(icon, size: 18), label: Text(label));
+    return btn;
+  }
+
+  ButtonStyle _primaryButtonStyle({Color? backgroundColor}) {
+    return ElevatedButton.styleFrom(
+      backgroundColor: backgroundColor ?? Colors.pink.shade600,
+      foregroundColor: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+    );
+  }
+
+  ButtonStyle _secondaryButtonStyle() {
+    return TextButton.styleFrom(
+      foregroundColor: Colors.pink.shade600,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    );
+  }
+
   void _showComingSoon() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -274,7 +307,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _showProfileDialog() async {
     final user = _firebaseAuth.currentUser;
     final nameCtrl = TextEditingController(text: user?.displayName ?? '');
-    final photoCtrl = TextEditingController(text: user?.photoURL ?? '');
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -286,22 +318,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               controller: nameCtrl,
               decoration: const InputDecoration(labelText: 'Display name'),
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: photoCtrl,
-              decoration: const InputDecoration(labelText: 'Photo URL (optional)'),
-            ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
+          _dialogSecondaryButton(
+            label: 'Cancel',
+            icon: Icons.close,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          ElevatedButton.icon(
             onPressed: () async {
               try {
                 await user?.updateDisplayName(nameCtrl.text.trim());
-                if (photoCtrl.text.trim().isNotEmpty) {
-                  await user?.updatePhotoURL(photoCtrl.text.trim());
-                }
                 if (!mounted) return;
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -314,7 +342,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
               }
             },
-            child: const Text('Save'),
+            icon: const Icon(Icons.save),
+            label: const Text('Save Changes'),
+            style: _primaryButtonStyle(),
           ),
         ],
       ),
@@ -352,8 +382,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
+          _dialogSecondaryButton(
+            label: 'Cancel',
+            icon: Icons.close,
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          ElevatedButton.icon(
             onPressed: () async {
               if (newCtrl.text != confirmCtrl.text) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -385,7 +419,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
               }
             },
-            child: const Text('Update'),
+            icon: const Icon(Icons.lock_reset),
+            label: const Text('Update Password'),
+            style: _primaryButtonStyle(),
           ),
         ],
       ),
@@ -408,7 +444,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: SelectableText(jsonStr),
             ),
           ),
-          actions: [
+        actions: [
             TextButton(
               onPressed: () async {
                 await Clipboard.setData(ClipboardData(text: jsonStr));
@@ -417,9 +453,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SnackBar(content: Text('Copied to clipboard')),
                 );
               },
+              style: _secondaryButtonStyle(),
               child: const Text('Copy'),
             ),
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: _secondaryButtonStyle(),
+              child: const Text('Close'),
+            ),
           ],
         ),
       );
@@ -444,7 +485,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: _secondaryButtonStyle(),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -463,7 +508,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: _secondaryButtonStyle(),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -483,7 +532,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: _secondaryButtonStyle(),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -511,9 +564,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SnackBar(content: Text('Bug report template copied')),
               );
             },
+            style: _secondaryButtonStyle(),
             child: const Text('Copy Template'),
           ),
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: _secondaryButtonStyle(),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
@@ -543,11 +601,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: const Text('Logout?'),
         content: const Text('Are you sure you want to logout?'),
         actions: [
-          TextButton(
+          _dialogSecondaryButton(
+            label: 'Cancel',
+            icon: Icons.close,
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
             onPressed: () async {
               Navigator.pop(ctx);
               await _authService.logout();
@@ -556,8 +615,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 MaterialPageRoute(builder: (_) => const LoginScreen()),
               );
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Logout'),
+            icon: const Icon(Icons.logout),
+            label: const Text('Logout'),
+            style: _primaryButtonStyle(backgroundColor: Colors.red.shade600),
           ),
         ],
       ),
@@ -573,11 +633,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'This action cannot be undone. All your data will be permanently deleted. Are you sure?',
         ),
         actions: [
-          TextButton(
+          _dialogSecondaryButton(
+            label: 'Cancel',
+            icon: Icons.close,
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
             onPressed: () async {
               Navigator.pop(ctx);
               try {
@@ -603,8 +664,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete'),
+            icon: const Icon(Icons.delete_forever),
+            label: const Text('Delete Account'),
+            style: _primaryButtonStyle(backgroundColor: Colors.red.shade700),
           ),
         ],
       ),
